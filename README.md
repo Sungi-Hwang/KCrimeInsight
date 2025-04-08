@@ -1,5 +1,6 @@
+```
 projectweb/
-│
+│														
 ├── __init__.py      		# Flask 애플리케이션 초기화
 ├── views/           	< route 파일이 들어갈 폴더 >
 │     └── main_view.py    	# 기본 route 설정
@@ -12,3 +13,4 @@ projectweb/
        ├── js/
        ├── images/
        └── vendor/
+```
