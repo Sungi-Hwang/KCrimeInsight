@@ -1,4 +1,5 @@
 ```
+<Web>
 projectweb/
 │														
 ├── __init__.py      		# Flask 애플리케이션 초기화
