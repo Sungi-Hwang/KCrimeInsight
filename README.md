@@ -9,10 +9,10 @@ projectweb/
 │     └── auth_view.py          # 계정 관련 route 설정
 │
 ├── templates/       	        < HTML 템플릿 폴더 >
-│     ├── page_modules/	        < 공통으로 사용되는 css, js 사용 Code >
-│     ├── auth/                 < 계정 관련 사용 HTML >
 │     ├── base.html	        # 홈페이지 베이스 부모 HTML
-│     └── index.html	   	# 첫 화면 웹페이지 템플릿
+│     ├── index.html	   	# 첫 화면 웹페이지 템플릿
+│     ├── page_modules/	        < 공통으로 사용되는 css, js 사용 Code >
+│     └── auth/                 < 계정 관련 사용 HTML >
 │
 └── static/          		< css, js 파일 폴더 >
       ├── css/
