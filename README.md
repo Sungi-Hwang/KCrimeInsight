@@ -10,8 +10,8 @@ projectweb/
 │     ├── base.html	        # 홈페이지 베이스 부모 HTML
 │     └── index.html	   	# 첫 화면 웹페이지 템플릿
 └── static/          		< css, js 파일 폴더 >
-       ├── css/
-       ├── js/
-       ├── images/
-       └── vendor/
+      ├── css/
+      ├── js/
+      ├── images/
+      └── vendor/
 ```
