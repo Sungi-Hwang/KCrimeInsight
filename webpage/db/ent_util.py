@@ -1,6 +1,6 @@
 import pymysql
 
-def select_entertain_bar(offset=0, limit=20):
+def select_ent_data(offset=0, limit=20):
     rows = []
     try:
         conn = pymysql.connect(
@@ -27,7 +27,7 @@ def select_entertain_bar(offset=0, limit=20):
     return rows
 
 
-def count_entertain_bar():
+def count_ent_data():
     count = 0
     try:
         conn = pymysql.connect(
@@ -53,7 +53,7 @@ def count_entertain_bar():
     return count
 
 
-def get_entertain_bar_columns():
+def get_ent_data_columns():
     try:
         conn = pymysql.connect(
             host='192.168.0.234',
@@ -77,5 +77,3 @@ def get_entertain_bar_columns():
             cursor.close()
         if conn:
             conn.close()
-
-
