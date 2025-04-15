@@ -17,7 +17,7 @@ projectweb/
 │     └── data/                 < Table 페이지 사용 HTML >
 │
 └── static/          		< 파일 폴더 >
-      ├── assets/            < css, js 파일 폴더>
-      ├── images/            < 이미지 폴더 >
-      └── vendor/            < 지도등 기타 css, js 폴더 > 
+      ├── assets/               < css, js 파일 폴더>
+      ├── images/               < 이미지 폴더 >
+      └── vendor/               < 지도등 기타 css, js 폴더 > 
 ```
