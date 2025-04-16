@@ -190,14 +190,18 @@ def crime_chart2():
 @data_bp.route('/get_crime_data_for_region', methods=['GET'])
 def get_crime_data_for_region_route():
     region = request.args.get('region')
-    year = request.args.get('year', '2022')  # 연도도 받도록 추가, 기본값 2022
+    year = request.args.get('year', '2022')
 
     if not region:
         return jsonify({'error': '지역 파라미터가 없습니다.'}), 400
 
-    data = data_util.get_crime_data_for_region(region, year)  # 연도 파라미터도 전달
+    data = data_util.get_crime_data_for_region(region, year)
 
     if not data:
         return jsonify({'error': '데이터 없음'}), 404
-    
-    return jsonify(data)
+
+    # labels와 values로 변환
+    labels = list(data.keys())
+    values = list(data.values())
+
+    return jsonify({'labels': labels, 'values': values})

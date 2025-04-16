@@ -144,6 +144,22 @@
             jQuery('#vmap').vectorMap({
                 map: 'southkorea_provinces',
                 backgroundColor: null,
+                enableZoom: true,
+                zoomOnScroll: true,
+                zoomButtons : true,  // 확대/축소 버튼 비활성화
+                panOnDrag: true,
+                regionStyle: {
+                    initial: {
+                        fill: '#B8E4F9',
+                        "fill-opacity": 0.7,
+                        stroke: '#1C1C1C',
+                        "stroke-width": 1,
+                        "stroke-opacity": 0.8
+                    },
+                    hover: {
+                        "fill-opacity": 0.8
+                    }
+                },
                 color: '#cceeff',
                 borderColor: '#666666',
                 borderWidth: 1.4,
@@ -152,14 +168,13 @@
                 enableZoom: true,
                 showTooltip: true,
                 normalizeFunction: 'polynomial',
-                zoomOnScroll: true,
-                zoomMax: 20,
+                // zoomMax: 20,
                 onRegionClick: function(event, code, region) {
                     console.log("Clicked Region: ", region);
     
                     // 클릭한 지역의 범죄 데이터 요청
                     $.ajax({
-                        url: '/get_crime_data_for_region',  // 이 경로는 서버에서 정의된 엔드포인트
+                        url: '/data/get_crime_data_for_region', 
                         method: 'GET',
                         data: { region: region },  // 클릭한 지역 정보 전달
                         success: function(response) {
@@ -183,7 +198,25 @@
                         datasets: [{
                             label: '범죄 유형 비율',
                             data: data.values,  // 서버에서 전달받은 데이터 값
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+                            backgroundColor: [
+                            '#FFB3BA',  // 소프트 레드
+                            '#FFDFBA',  // 라이트 오렌지
+                            '#FFFFBA',  // 라이트 옐로우
+                            '#BAFFC9',  // 라이트 민트
+                            '#BAE1FF',  // 소프트 블루
+                            '#C6C6FF',  // 연보라
+                            '#FFD6E0',  // 핑크 베이지
+                            '#FFF5BA',  // 크림
+                            '#D5F4E6',  // 민트 블루
+                            '#E2F0CB',  // 연그린
+                            '#F6DFEB',  // 소프트 핑크
+                            '#FFDAC1',  // 코랄 오렌지
+                            '#C7CEEA',  // 연보라 블루
+                            '#F8E9A1',  // 옅은 옐로우
+                            '#A8D0E6',  // 소프트 하늘색
+                            '#D3BCC0',  // 베이지 핑크
+                            '#B5EAD7'   // 소프트 민트그린
+                        ],
                             hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
                         }]
                     },
@@ -205,6 +238,7 @@
                 });
             }
         })(jQuery);
+        
 
         // (function($) {
         //     "use strict";
