@@ -26,33 +26,16 @@
         </div>
 
         <div class="content mt-3">
-
             <div class="col-sm-12 col-lg-6" style="height: 300px;">
-                <div class="card text-white bg-flat-color-1">
+                <div class="ccard text-white bg-dark">
                     <div class="card-body pb-0">
-                        <div class="dropdown float-right">
-                            <button class="btn bg-transparent dropdown-toggle theme-toggle text-light" type="button" id="dropdownMenuButton1" data-toggle="dropdown">
-                                <i class="fa fa-cog"></i>
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                                <div class="dropdown-menu-content">
-                                    <a class="dropdown-item" href="#">Action</a>
-                                    <a class="dropdown-item" href="#">Another action</a>
-                                    <a class="dropdown-item" href="#">Something else here</a>
-                                </div>
-                            </div>
-                        </div>
                         <h4 class="mb-0">
-                            <span class="count">10468</span>
-                        </h4>
-                        <p class="text-light">Members online</p>
-
+                            <p class="text-light">지역별 총 범죄 현황</p>
+                        </h4>                       
                         <div class="chart-wrapper px-0" style="height:200px;" >
-                            <canvas id="widgetChart1"></canvas>
+                            <canvas id="crimeChart" width="400" height="200"></canvas>
                         </div>
-
                     </div>
-
                 </div>
             </div>
             <!--/.col-->
@@ -60,85 +43,12 @@
             <div class="col-sm-12 col-lg-6" style="height: 300px;">
                 <div class="card text-white bg-flat-color-2">
                     <div class="card-body pb-0">
-                        <div class="dropdown float-right">
-                            <button class="btn bg-transparent dropdown-toggle theme-toggle text-light" type="button" id="dropdownMenuButton2" data-toggle="dropdown">
-                                <i class="fa fa-cog"></i>
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                <div class="dropdown-menu-content">
-                                    <a class="dropdown-item" href="#">Action</a>
-                                    <a class="dropdown-item" href="#">Another action</a>
-                                    <a class="dropdown-item" href="#">Something else here</a>
-                                </div>
-                            </div>
-                        </div>
                         <h4 class="mb-0">
-                            <span class="count">10468</span>
-                        </h4>
-                        <p class="text-light">Members online</p>
-
+                            <p class="text-light">범죄 유형별 현황</p>
+                        </h4> 
                         <div class="chart-wrapper px-0" style="height: 200px;">
-                            <canvas id="widgetChart2"></canvas>
+                            <canvas id="crimeTypeChart" width="400" height="200"></canvas>
                         </div>
-
-                    </div>
-                </div>
-            </div>
-            <!--/.col-->
-
-            <div class="col-sm-12 col-lg-6" style="height: 300px;">
-                <div class="card text-white bg-flat-color-3">
-                    <div class="card-body pb-0">
-                        <div class="dropdown float-right">
-                            <button class="btn bg-transparent dropdown-toggle theme-toggle text-light" type="button" id="dropdownMenuButton3" data-toggle="dropdown">
-                                <i class="fa fa-cog"></i>
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton3">
-                                <div class="dropdown-menu-content">
-                                    <a class="dropdown-item" href="#">Action</a>
-                                    <a class="dropdown-item" href="#">Another action</a>
-                                    <a class="dropdown-item" href="#">Something else here</a>
-                                </div>
-                            </div>
-                        </div>
-                        <h4 class="mb-0">
-                            <span class="count">10468</span>
-                        </h4>
-                        <p class="text-light">Members online</p>
-
-                    </div>
-
-                    <div class="chart-wrapper px-0" style="height:200px">
-                        <canvas id="widgetChart3"></canvas>
-                    </div>
-                </div>
-            </div>
-            <!--/.col-->
-
-            <div class="col-sm-12 col-lg-6" style="height: 300px;">
-                <div class="card text-white bg-flat-color-4">
-                    <div class="card-body pb-0">
-                        <div class="dropdown float-right">
-                            <button class="btn bg-transparent dropdown-toggle theme-toggle text-light" type="button" id="dropdownMenuButton4" data-toggle="dropdown">
-                                <i class="fa fa-cog"></i>
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton4">
-                                <div class="dropdown-menu-content">
-                                    <a class="dropdown-item" href="#">Action</a>
-                                    <a class="dropdown-item" href="#">Another action</a>
-                                    <a class="dropdown-item" href="#">Something else here</a>
-                                </div>
-                            </div>
-                        </div>
-                        <h4 class="mb-0">
-                            <span class="count">10468</span>
-                        </h4>
-                        <p class="text-light">Members online</p>
-
-                        <div class="chart-wrapper px-3" style="height: 200px;">
-                            <canvas id="widgetChart4"></canvas>
-                        </div>
-
                     </div>
                 </div>
             </div>
@@ -151,7 +61,7 @@
                             <h4>지역 선택</h4>
                         </div>
                         <div class="Vector-map-js">
-                            <div id="vmap" class="vmap" style="height: 500px; width: 100%;"></div>
+                            <div id="vmap" class="vmap" style="height: 600px; width: 100%;"></div>
                         </div>
                     </div>
                 </div>
@@ -167,7 +77,51 @@
                     </div>
                 </div>
             </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const ctx = document.getElementById('crimeChart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ labels | tojson }},
+                        datasets: [{
+                            label: '지역별 총 범죄 발생',
+                            data: {{ values | tojson }},
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            </script>
         
+            <script>
+                const ctx2 = document.getElementById('crimeTypeChart').getContext('2d');
+                const chart2 = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ type_labels | tojson }},
+                        datasets: [{
+                            label: '2022 범죄 유형별 건수',
+                            data: {{ type_values | tojson }},
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            </script>
     
         <!-- .content -->
         <!-- Right Panel 2 end-->
