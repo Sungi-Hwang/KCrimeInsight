@@ -144,22 +144,31 @@
             </div>
             <!--/.col-->
 
-            <div class="col-xl-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4>지역</h4>
+            <div class="row">
+                <div class="col-xl-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>지역</h4>
+                        </div>
+                        <div class="Vector-map-js">
+                            <div id="vmap" class="vmap" style="height: 600px; width: 100%;"></div>
+                        </div>
                     </div>
-                    <!-- <div class="Vector-map-js">
-                        <div id="vmap" class="vmap" style="height: 265px;"></div>
-                    </div> -->
-                    <div class="Vector-map-js">
-                        <div id="vmap" class="vmap" style="height: 600px; width: 100%;"></div>
-                    </div>
-
                 </div>
-                <!-- /# card -->
+            
+                <div class="col-xl-6" >
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>범죄 유형별 원그래프</h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="crimePieChart" width="400" height="400"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        
+    
         <!-- .content -->
         <!-- Right Panel 2 end-->
 {% endblock %} 

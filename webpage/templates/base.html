@@ -27,8 +27,8 @@
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
                     <i class="fa fa-bars"></i>
                 </button>
-                <a class="navbar-brand" href="./"><img src="/static/images/logo.png" alt="Logo"></a>
-                <a class="navbar-brand hidden" href="./"><img src="/static/images/logo2.png" alt="Logo"></a>
+                <a class="navbar-brand" href="{{ url_for('main.index') }}"><img src="/static/images/logo.png" alt="Logo"></a>
+                <a class="navbar-brand hidden" href="{{ url_for('main.index') }}"><img src="/static/images/logo2.png" alt="Logo"></a>
             </div>
 
             <div id="main-menu" class="main-menu collapse navbar-collapse">
@@ -40,8 +40,7 @@
                     <li class="menu-item-has-children dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-table"></i>Tables</a>
                         <ul class="sub-menu children dropdown-menu">
-                            <li><i class="fa fa-table"></i><a href="{{ url_for('data.crime_data_11_22') }}">2011~2022 범죄 현황 Table</a></li>
-                            <li><i class="fa fa-table"></i><a href="{{ url_for('data.crime_data_23') }}">2023 범죄 현황 Table</a></li>
+                            <li><i class="fa fa-table"></i><a href="{{ url_for('data.crime_data_11_22') }}">범죄 현황 Table</a></li>
                             <li><i class="fa fa-table"></i><a href="{{ url_for('data.ent_data') }}">유흥 주점 table</a></li>
                             <li><i class="fa fa-table"></i><a href="tables-data.html">생활 환경 Table</a></li>
                             <li><i class="fa fa-table"></i><a href="tables-data.html">사회 경제 Table</a></li>
@@ -50,13 +49,13 @@
                     <li class="menu-item-has-children dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-bar-chart"></i>Charts</a>
                         <ul class="sub-menu children dropdown-menu">
-                            <li><i class="menu-icon fa fa-line-chart"></i><a href="charts-chartjs.html">Crime Chart</a></li>
-                            <li><i class="menu-icon fa fa-area-chart"></i><a href="charts-flot.html">Flot Chart</a></li>
+                            <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart') }}">지역별 범죄 chart</a></li>
+                            <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart2') }}">범죄 유형별 chart</a></li>
+                            <li><i class="menu-icon fa fa-line-chart"></i><a href="charts-flot.html">Flot Chart</a></li>
                             <li><i class="menu-icon fa fa-pie-chart"></i><a href="charts-peity.html">Peity Chart</a></li>
                             <li><i class="menu-icon fa fa-map-o"></i><a href="maps-gmap.html">지역 자세히 보기</a></li>
                         </ul>
                     </li>
-
 
                     <h3 class="menu-title">계정 관리</h3><!-- /.menu-title -->
                     {% if session.get('loginuser') %}
@@ -143,22 +142,69 @@
         (function($) {
             "use strict";
             jQuery('#vmap').vectorMap({
-                map: 'southkorea_provinces', // ← 한국 시군구 지도!
+                map: 'southkorea_provinces',
                 backgroundColor: null,
                 color: '#cceeff',
-                borderColor: '#666666',     // ← 테두리 색상
-                borderWidth: 1.4,           // ← 테두리 두께
-                hoverOpacity: 0.7,  
-                selectedColor: '#009688',   // ← 진한 청록색 (클릭 시 색상)
+                borderColor: '#666666',
+                borderWidth: 1.4,
+                hoverOpacity: 0.7,
+                selectedColor: '#009688',
                 enableZoom: true,
                 showTooltip: true,
                 normalizeFunction: 'polynomial',
                 zoomOnScroll: true,
-                zoomMax: 20
+                zoomMax: 20,
+                onRegionClick: function(event, code, region) {
+                    console.log("Clicked Region: ", region);
+    
+                    // 클릭한 지역의 범죄 데이터 요청
+                    $.ajax({
+                        url: '/get_crime_data_for_region',  // 이 경로는 서버에서 정의된 엔드포인트
+                        method: 'GET',
+                        data: { region: region },  // 클릭한 지역 정보 전달
+                        success: function(response) {
+                            // 받은 데이터를 바탕으로 원그래프 표시
+                            showCrimePieChart(response);
+                        },
+                        error: function(err) {
+                            console.error("데이터를 불러오는 데 실패했습니다.", err);
+                        }
+                    });
+                }
             });
+    
+            // 원그래프 그리기 함수
+            function showCrimePieChart(data) {
+                var ctx = document.getElementById('crimePieChart').getContext('2d');
+                var crimePieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: data.labels,  // 서버에서 전달받은 레이블
+                        datasets: [{
+                            label: '범죄 유형 비율',
+                            data: data.values,  // 서버에서 전달받은 데이터 값
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+                            hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return tooltipItem.label + ': ' + tooltipItem.raw;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         })(jQuery);
-
-
 
         // (function($) {
         //     "use strict";
@@ -176,7 +222,6 @@
         //     });
         // })(jQuery);
     </script>
-
 </body>
 
 </html>

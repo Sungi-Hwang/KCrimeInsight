@@ -7,6 +7,7 @@ import math
 
 from pathlib import Path
 
+import pymysql
 import pandas as pd
 import yfinance as yf
 
@@ -14,6 +15,7 @@ from ..db import data_util
 from ..db import ent_util
 
 data_bp = Blueprint("data", __name__, url_prefix="/data")
+
 
 
 # ---------------- 페이징 처리 함수 ---------------- #
@@ -70,33 +72,8 @@ def crime_data_11_22():
         display_pages=display_pages
     )
 
-# ---------------- crime_data_23 함수 ---------------- #
-@data_bp.route("/crime_data_23", methods=['GET'])
-def crime_data_23():
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=10, type=int)
-    offset = (page - 1) * per_page
-
-    rows = data_util.select_crime_data_23(offset=offset, limit=per_page)
-    columns = data_util.get_crime_data_23_columns()
-    df_crime_data_23 = pd.DataFrame(rows, columns=columns)
-
-    total_count = data_util.count_crime_data_23()
-    total_pages = (total_count + per_page - 1) // per_page  # 올림 계산
-
-    display_pages = get_display_pages(page, total_pages)
-    
-    return render_template(
-        'data/crime_data_23.html',
-        df=df_crime_data_23,
-        page=page,
-        per_page=per_page,
-        total_pages=total_pages,
-        display_pages=display_pages
-    )
-
 # ---------------- ent_data 함수 ---------------- #
-@data_bp.route("/ent_data ", methods=['GET'])
+@data_bp.route("/ent_data", methods=['GET'])
 def ent_data():
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
@@ -121,3 +98,106 @@ def ent_data():
     )
 
 
+# ---------------- crime_chart 함수 ---------------- #
+
+@data_bp.route('/crime_chart', methods=['GET', 'POST'])
+def crime_chart():
+
+    crime_columns = ["강도", "교통범죄", "노동범죄", "도박범죄", "마약범죄", "병역범죄",
+                     "보건범죄", "살인기수", "살인미수등", "선거범죄", "성풍속범죄", "안보범죄",
+                     "절도범죄", "지능범죄", "특별경제범죄", "폭력범죄", "환경범죄"]
+
+    selected_year = request.form.get('year', '전체')
+    selected_crime = request.form.get('crime', '전체')
+
+    rows2 = data_util.chart_crime()
+    df = pd.DataFrame(rows2)
+
+    if '연도' not in df.columns or '지역' not in df.columns:
+        return "데이터 형식이 잘못되었습니다.", 500
+
+    df = df[df['연도'] != '연도']  # 잘못된 헤더 제거
+    df['연도'] = df['연도'].astype(int)
+
+    # 연도 필터링
+    if selected_year != '전체':
+        df = df[df['연도'] == int(selected_year)]
+
+    # 범죄 유형 필터링
+    if selected_crime != '전체':
+        df = df[['지역', selected_crime]]
+    else:
+        df = df[['지역'] + crime_columns]
+        df = df.groupby('지역').sum().reset_index()
+
+    # 차트용 데이터 생성
+    chart_labels = df['지역'].tolist()
+    chart_values = (
+        df[crime_columns].sum(axis=1).tolist()
+        if selected_crime == '전체'
+        else df[selected_crime].tolist()
+    )
+
+    return render_template('data/crime_chart.html',
+                           crime_columns=crime_columns,
+                           labels=chart_labels,
+                           values=chart_values,
+                           selected_year=selected_year,
+                           selected_crime=selected_crime)
+
+
+@data_bp.route('/crime_chart2', methods=['GET', 'POST'])
+def crime_chart2():
+
+    crime_columns = ["강도", "교통범죄", "노동범죄", "도박범죄", "마약범죄", "병역범죄",
+                     "보건범죄", "살인기수", "살인미수등", "선거범죄", "성풍속범죄", "안보범죄",
+                     "절도범죄", "지능범죄", "특별경제범죄", "폭력범죄", "환경범죄"]
+
+    selected_year = request.form.get('year', '전체')
+    selected_region = request.form.get('region', '전체')
+
+    data = data_util.chart_crime()
+    df = pd.DataFrame(data)
+
+    if df.empty:
+        return "데이터가 없습니다", 500
+
+    df = df[df['연도'] != '연도']
+    df['연도'] = df['연도'].astype(int)
+
+    if selected_year != '전체':
+        df = df[df['연도'] == int(selected_year)]
+
+    if selected_region != '전체':
+        df = df[df['지역'] == selected_region]
+
+    # 범죄 유형별 합계
+    data = df[crime_columns].sum().to_dict()
+
+    labels = list(data.keys())
+    values = list(data.values())
+    regions = sorted(data_util.get_all_regions())
+
+    return render_template(
+        'data/crime_chart2.html',
+        labels=labels,
+        values=values,
+        regions=regions,
+        selected_year=selected_year,
+        selected_region=selected_region
+    )
+
+@data_bp.route('/get_crime_data_for_region', methods=['GET'])
+def get_crime_data_for_region_route():
+    region = request.args.get('region')
+    year = request.args.get('year', '2022')  # 연도도 받도록 추가, 기본값 2022
+
+    if not region:
+        return jsonify({'error': '지역 파라미터가 없습니다.'}), 400
+
+    data = data_util.get_crime_data_for_region(region, year)  # 연도 파라미터도 전달
+
+    if not data:
+        return jsonify({'error': '데이터 없음'}), 404
+    
+    return jsonify(data)
