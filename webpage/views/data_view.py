@@ -13,6 +13,7 @@ import yfinance as yf
 
 from ..db import data_util
 from ..db import ent_util
+from ..db import analysis_util
 
 data_bp = Blueprint("data", __name__, url_prefix="/data")
 
@@ -205,3 +206,30 @@ def get_crime_data_for_region_route():
     values = list(data.values())
 
     return jsonify({'labels': labels, 'values': values})
+
+
+@data_bp.route('/correlation', methods=['GET', 'POST'])
+def correlation_page():
+    # 업종 목록
+    ent_types = ['룸살롱', '노래클럽', '간이주점', '비어_바_살롱', '카바레', '기타']
+
+    selected_type = request.form.get('types', '전체')
+    selected_mode = request.form.get('mode', '절대값')
+
+    if selected_mode == '비율':
+        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data = analysis_util.get_correlation_ratio_data(selected_type)
+    else:
+        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data = analysis_util.get_correlation_data(selected_type)
+
+    return render_template(
+        'data/analysis_1.html',
+        merged_data=merged_df.to_dict(orient='records'),
+        pearson_corr=pearson_corr,
+        pearson_p=pearson_p,
+        spearman_corr=spearman_corr,
+        spearman_p=spearman_p,
+        scatter_data=scatter_data,
+        ent_types=ent_types,
+        selected_type=selected_type,
+        selected_mode=selected_mode
+    )

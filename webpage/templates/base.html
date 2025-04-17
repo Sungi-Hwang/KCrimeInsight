@@ -36,14 +36,12 @@
                     <li class="active">
                         <a href="{{ url_for('main.index') }}"> <i class="menu-icon fa fa-dashboard"></i>Main Page</a>
                     </li>
-                    <h3 class="menu-title">범죄 종류 및 분석</h3><!-- /.menu-title -->
+                    <h3 class="menu-title">범죄 현황 및 관련 자료</h3><!-- /.menu-title -->
                     <li class="menu-item-has-children dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-table"></i>Tables</a>
                         <ul class="sub-menu children dropdown-menu">
                             <li><i class="fa fa-table"></i><a href="{{ url_for('data.crime_data_11_22') }}">범죄 현황 Table</a></li>
                             <li><i class="fa fa-table"></i><a href="{{ url_for('data.ent_data') }}">유흥 주점 table</a></li>
-                            <li><i class="fa fa-table"></i><a href="tables-data.html">생활 환경 Table</a></li>
-                            <li><i class="fa fa-table"></i><a href="tables-data.html">사회 경제 Table</a></li>
                         </ul>
                     </li>
                     <li class="menu-item-has-children dropdown">
@@ -51,9 +49,16 @@
                         <ul class="sub-menu children dropdown-menu">
                             <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart') }}">지역별 범죄 chart</a></li>
                             <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart2') }}">범죄 유형별 chart</a></li>
-                            <li><i class="menu-icon fa fa-line-chart"></i><a href="charts-flot.html">Flot Chart</a></li>
-                            <li><i class="menu-icon fa fa-pie-chart"></i><a href="charts-peity.html">Peity Chart</a></li>
-                            <li><i class="menu-icon fa fa-map-o"></i><a href="maps-gmap.html">지역 자세히 보기</a></li>
+                            <li><i class="menu-icon fa fa-pie-chart"></i><a href="charts-peity.html">Peity Chart</a></li>                            
+                        </ul>
+                    </li>
+                    <h3 class="menu-title">범죄 분석</h3>
+                    <li class="menu-item-has-children dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="menu-icon fa fa-line-chart"></i>Analysis
+                        </a>
+                        <ul class="sub-menu children dropdown-menu">
+                            <li><i class="menu-icon fa fa-line-chart"></i><a href="{{ url_for('data.correlation_page') }}">유흥업소-폭력범죄 상관분석</a></li>
                         </ul>
                     </li>
 

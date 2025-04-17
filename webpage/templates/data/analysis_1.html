@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>유흥업소-폭력범죄 상관계수 분석</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content_block %}
+
+<div class="breadcrumbs">
+  <div class="col-sm-4">
+    <div class="page-header float-left">
+      <div class="page-title">
+        <h1>유흥업소-폭력범죄 상관분석</h1>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-8">
+    <div class="page-header float-right">
+      <div class="page-title">
+        <ol class="breadcrumb text-right">
+          <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+          <li><a href="#">분석</a></li>
+          <li class="active">상관계수 분석</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+<form method="POST">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label for="types">업종 선택:</label>
+    <select name="types" id="types">
+      <option value="전체" {% if selected_type == '전체' %}selected{% endif %}>전체</option>
+      {% for t in ent_types %}
+      <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  
+    <label for="mode">분석 기준:</label>
+    <select name="mode" id="mode">
+      <option value="절대값" {% if selected_mode == '절대값' %}selected{% endif %}>절대값 기준</option>
+      <option value="비율" {% if selected_mode == '비율' %}selected{% endif %}>인구 대비 비율</option>
+    </select>
+  
+    <button type="submit">분석</button>
+  </form>
+  <br>
+
+<div class="content mt-3">
+  <div class="animated fadeIn">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <strong class="card-title">지역별 유흥업소 수 & 폭력범죄 건수</strong>
+          </div>
+          <div class="card-body">
+            <table class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th>지역</th>
+                  <th>유흥업소 수</th>
+                  <th>폭력범죄 건수</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in merged_data %}
+                <tr>
+                  <td>{{ row['지역'] }}</td>
+                  <td>{{ row['엔터수'] }}</td>
+                  <td>{{ row['폭력범죄건수'] }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <hr>
+            <h5>상관계수 결과</h5>
+            <p><strong>피어슨 상관계수:</strong> {{ pearson_corr }} (p-value: {{ pearson_p }})</p>
+            <p><strong>스피어만 상관계수:</strong> {{ spearman_corr }} (p-value: {{ spearman_p }})</p>
+
+
+            <hr>
+            <h5>산점도 그래프</h5>
+            <canvas id="scatterChart" width="800" height="400"></canvas>
+
+            <script>
+              const ctx = document.getElementById('scatterChart').getContext('2d');
+              const scatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                  datasets: [{
+                    label: '유흥업소 수 vs 폭력범죄',
+                    data: {{ scatter_data | tojson }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                  }]
+                },
+                options: {
+                  scales: {
+                    x: {
+                      type: 'linear',
+                      position: 'bottom',
+                      title: { display: true, text: '유흥업소 수' }
+                    },
+                    y: {
+                      title: { display: true, text: '폭력범죄 건수' }
+                    }
+                  }
+                }
+              });
+            </script>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
