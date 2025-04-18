@@ -47,8 +47,15 @@
             <option value="{{ crime }}" {% if selected_crime == crime %}selected{% endif %}>{{ crime }}</option>
             {% endfor %}
         </select>
+        
+        <label for="mode">표시 기준:</label>
+        <select name="mode" id="mode">
+            <option value="절대값" {% if selected_mode == '절대값' %}selected{% endif %}>절대값</option>
+            <option value="비율" {% if selected_mode == '비율' %}selected{% endif %}>인구수 비율</option>
+        </select>
 
         <button type="submit">적용</button>
+
     </form>
 
     <canvas id="crimeChart" width="800" height="400"></canvas>

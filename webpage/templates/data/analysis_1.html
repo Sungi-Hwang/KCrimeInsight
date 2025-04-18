@@ -28,11 +28,13 @@
   </div>
 </div>
 <form method="POST">
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label for="types">업종 선택:</label>
-    <select name="types" id="types">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label for="ent_type">업종 선택:</label>
+    <select name="ent_type" id="ent_type">
       <option value="전체" {% if selected_type == '전체' %}selected{% endif %}>전체</option>
       {% for t in ent_types %}
-      <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+        {% if t != '전체' %}
+          <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+        {% endif %}
       {% endfor %}
     </select>
   
@@ -75,10 +77,29 @@
             </table>
 
             <hr>
-            <h5>상관계수 결과</h5>
-            <p><strong>피어슨 상관계수:</strong> {{ pearson_corr }} (p-value: {{ pearson_p }})</p>
-            <p><strong>스피어만 상관계수:</strong> {{ spearman_corr }} (p-value: {{ spearman_p }})</p>
+            <h3 style="margin-top:10px; margin-bottom:10px;">
+              현재 <strong>{{ selected_type }}</strong> 와(과) 
+              <strong>
+              {% if selected_mode == '절대값' %}
+                절대값 기준
+              {% else %}
+                인구대비 비율 기준
+              {% endif %}
+              </strong>
+              폭력범죄 상관분석 결과
+            </h3>
 
+            <h5 style="margin-bottom:10px;">상관계수 결과</h5>
+            <p>Pearson 상관계수: {{ pearson_corr }} 
+              <span style="color: {{ 'red' if pearson_p < 0.05 else 'gray' }}">
+                  (p-value: {{ pearson_p }})
+              </span>
+            </p>
+            <p>Spearman 상관계수: {{ spearman_corr }} 
+                <span style="color: {{ 'red' if spearman_p < 0.05 else 'gray' }}">
+                    (p-value: {{ spearman_p }})
+                </span>
+            </p>
 
             <hr>
             <h5>산점도 그래프</h5>
@@ -86,31 +107,55 @@
 
             <script>
               const ctx = document.getElementById('scatterChart').getContext('2d');
+              const isRatio = "{{ selected_mode }}" === "비율";
+
+              const scatterOptions = {
+                scales: {
+                  x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    min: 0,
+                    max: isRatio ? {{ max_x }} : undefined,
+                    title: { display: true, text: isRatio ? '업소수 비율' : '업소 수' }
+                  },
+                  y: {
+                    min: 0,
+                    max: isRatio ? {{ max_y }} : undefined,
+                    title: { display: true, text: isRatio ? '폭력범죄 비율' : '폭력범죄 건수' }
+                  }
+                }
+              };
+
               const scatterChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
-                  datasets: [{
-                    label: '유흥업소 수 vs 폭력범죄',
-                    data: {{ scatter_data | tojson }},
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                  }]
-                },
-                options: {
-                  scales: {
-                    x: {
-                      type: 'linear',
-                      position: 'bottom',
-                      title: { display: true, text: '유흥업소 수' }
+                  datasets: [
+                    {
+                      label: '상관 산점도',
+                      data: {{ scatter_data|tojson }},
+                      backgroundColor: 'rgba(75, 192, 192, 1)'
                     },
-                    y: {
-                      title: { display: true, text: '폭력범죄 건수' }
+                    {
+                      label: '회귀선',
+                      type: 'line',
+                      data: {{ regression_line|tojson }},
+                      borderColor: 'rgba(255, 99, 132, 1)',
+                      fill: false
                     }
-                  }
-                }
+                  ]
+                },
+                options: scatterOptions
               });
-            </script>
 
-          </div>
+              // 온오프 함수
+              function toggleTrendline() {
+                const meta = scatterChart.getDatasetMeta(1);
+                meta.hidden = !meta.hidden;
+                scatterChart.update();
+              }
+
+            </script>
+         </div>
         </div>
       </div>
     </div>

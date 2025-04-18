@@ -1,5 +1,8 @@
 import pymysql
 import pandas as pd
+import sqlite3
+from sqlalchemy import create_engine
+
 
 def select_crime_data_11_22(offset=0, limit=20):
     rows = []
@@ -112,6 +115,40 @@ def chart_crime(selected_year='전체', selected_crime='전체'):
     return rows2
 
 
+def chart_crime_ratio(selected_year, selected_crime):
+    engine = create_engine("mysql+pymysql://teamuser:team1234@192.168.0.234:3306/1team_database")
+
+    crime_df = pd.read_sql("SELECT * FROM crime_data_2011_2022_edit", engine)
+    pop_df = pd.read_sql("SELECT region as 지역, `2022_15세이상인구__천명_` as 인구수 FROM merged_data_jh", engine)
+
+    crime_columns = ["강도", "교통범죄", "노동범죄", "도박범죄", "마약범죄", "병역범죄",
+                     "보건범죄", "살인기수", "살인미수등", "선거범죄", "성풍속범죄", "안보범죄",
+                     "절도범죄", "지능범죄", "특별경제범죄", "폭력범죄", "환경범죄"]
+
+    for col in crime_columns:
+        crime_df[col] = pd.to_numeric(crime_df[col], errors='coerce')
+
+    if selected_year != '전체':
+        # 선택 연도만 필터
+        crime_df = crime_df[crime_df['연도'] == int(selected_year)]
+        crime_df = crime_df.groupby(['지역'])[crime_columns].sum().reset_index()
+    else:
+        # 전체 연도면 연도 빼고 지역만 그룹화
+        crime_df = crime_df.groupby(['지역'])[crime_columns].sum().reset_index()
+
+    # 인구수 병합
+    crime_df = pd.merge(crime_df, pop_df, on='지역', how='left')
+
+    crime_df['인구수'] = pd.to_numeric(crime_df['인구수'], errors='coerce')
+    crime_df = crime_df[crime_df['인구수'].notnull()]
+
+    # 비율 계산
+    for col in crime_columns:
+        crime_df[f"{col}비율"] = crime_df[col] / crime_df['인구수']
+
+    return crime_df
+
+
 def get_all_regions():
     try:
         conn = pymysql.connect(
@@ -132,6 +169,7 @@ def get_all_regions():
         return []
     finally:
         conn.close()
+
 
 
 def get_crime_data_for_region(region, year='2022'):

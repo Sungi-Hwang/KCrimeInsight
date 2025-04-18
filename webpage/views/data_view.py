@@ -103,48 +103,69 @@ def ent_data():
 
 @data_bp.route('/crime_chart', methods=['GET', 'POST'])
 def crime_chart():
-
     crime_columns = ["강도", "교통범죄", "노동범죄", "도박범죄", "마약범죄", "병역범죄",
                      "보건범죄", "살인기수", "살인미수등", "선거범죄", "성풍속범죄", "안보범죄",
                      "절도범죄", "지능범죄", "특별경제범죄", "폭력범죄", "환경범죄"]
 
     selected_year = request.form.get('year', '전체')
     selected_crime = request.form.get('crime', '전체')
+    selected_mode = request.form.get('mode', '절대값')
 
-    rows2 = data_util.chart_crime()
-    df = pd.DataFrame(rows2)
+    chart_labels = []
+    chart_values = []
 
-    if '연도' not in df.columns or '지역' not in df.columns:
-        return "데이터 형식이 잘못되었습니다.", 500
+    if selected_mode == '비율':
+        # 비율 모드일 때 데이터 불러오기
+        df = data_util.chart_crime_ratio(selected_year, selected_crime)
+        if df.empty:
+            return "데이터 없음", 500
 
-    df = df[df['연도'] != '연도']  # 잘못된 헤더 제거
-    df['연도'] = df['연도'].astype(int)
+        chart_labels = df['지역'].tolist()
 
-    # 연도 필터링
-    if selected_year != '전체':
-        df = df[df['연도'] == int(selected_year)]
+        if selected_crime == '전체':
+            df['전체비율'] = df[[f"{col}비율" for col in crime_columns]].sum(axis=1)
+            chart_values = df['전체비율'].fillna(0).tolist()
+        else:
+            col_name = f"{selected_crime}비율"
+            if col_name not in df.columns:
+                return f"컬럼 {col_name} 없음", 500
+            chart_values = df[col_name].fillna(0).tolist()
 
-    # 범죄 유형 필터링
-    if selected_crime != '전체':
-        df = df[['지역', selected_crime]]
-    else:
-        df = df[['지역'] + crime_columns]
-        df = df.groupby('지역').sum().reset_index()
+    else:   
+        # 절대값 모드
+        rows2 = data_util.chart_crime()
+        df = pd.DataFrame(rows2)
 
-    # 차트용 데이터 생성
-    chart_labels = df['지역'].tolist()
-    chart_values = (
-        df[crime_columns].sum(axis=1).tolist()
-        if selected_crime == '전체'
-        else df[selected_crime].tolist()
-    )
+        if '연도' not in df.columns or '지역' not in df.columns:
+            return "데이터 형식이 잘못되었습니다.", 500
+
+        df = df[df['연도'] != '연도']
+        df['연도'] = df['연도'].astype(int)
+
+        if selected_year != '전체':
+            df = df[df['연도'] == int(selected_year)]
+
+        if selected_crime != '전체':
+            df = df[['지역', selected_crime]]
+            df = df.groupby('지역').sum().reset_index()  # 추가
+        else:
+            df = df[['지역'] + crime_columns]
+            df = df.groupby('지역').sum().reset_index()  # 추가
+
+        chart_labels = df['지역'].tolist()
+        chart_values = (
+            df[crime_columns].sum(axis=1).tolist()
+            if selected_crime == '전체'
+            else df[selected_crime].tolist()
+        )
 
     return render_template('data/crime_chart.html',
                            crime_columns=crime_columns,
                            labels=chart_labels,
                            values=chart_values,
                            selected_year=selected_year,
-                           selected_crime=selected_crime)
+                           selected_crime=selected_crime,
+                           selected_mode=selected_mode)
 
 
 @data_bp.route('/crime_chart2', methods=['GET', 'POST'])
@@ -156,6 +177,7 @@ def crime_chart2():
 
     selected_year = request.form.get('year', '전체')
     selected_region = request.form.get('region', '전체')
+
 
     data = data_util.chart_crime()
     df = pd.DataFrame(data)
@@ -179,14 +201,12 @@ def crime_chart2():
     values = list(data.values())
     regions = sorted(data_util.get_all_regions())
 
-    return render_template(
-        'data/crime_chart2.html',
-        labels=labels,
-        values=values,
-        regions=regions,
-        selected_year=selected_year,
-        selected_region=selected_region
-    )
+    return render_template('data/crime_chart2.html',
+                           labels=labels,
+                           values=values,
+                           regions=regions,
+                           selected_year=selected_year,
+                           selected_region=selected_region)
 
 @data_bp.route('/get_crime_data_for_region', methods=['GET'])
 def get_crime_data_for_region_route():
@@ -210,16 +230,27 @@ def get_crime_data_for_region_route():
 
 @data_bp.route('/correlation', methods=['GET', 'POST'])
 def correlation_page():
-    # 업종 목록
-    ent_types = ['룸살롱', '노래클럽', '간이주점', '비어_바_살롱', '카바레', '기타']
-
-    selected_type = request.form.get('types', '전체')
+    selected_type = request.form.get('ent_type', '전체')
     selected_mode = request.form.get('mode', '절대값')
 
+    ent_types = ['전체', '룸살롱', '노래클럽', '비어_바_살롱', '카바레', '간이주점', '기타']
+
     if selected_mode == '비율':
-        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data = analysis_util.get_correlation_ratio_data(selected_type)
+        result = analysis_util.get_correlation_ratio_data(selected_type)
     else:
-        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data = analysis_util.get_correlation_data(selected_type)
+        result = analysis_util.get_correlation_data(selected_type)
+
+    if result[0] is None:
+        merged_df = pd.DataFrame()
+        pearson_corr = pearson_p = spearman_corr = spearman_p = 0
+        scatter_data = []
+        regression_line = []
+        max_x = 1
+        max_y = 1
+    else:
+        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data, regression_line = result
+        max_x = max([p['x'] for p in scatter_data], default=1) * 1.2
+        max_y = max([p['y'] for p in scatter_data], default=1) * 1.2
 
     return render_template(
         'data/analysis_1.html',
@@ -229,7 +260,28 @@ def correlation_page():
         spearman_corr=spearman_corr,
         spearman_p=spearman_p,
         scatter_data=scatter_data,
+        regression_line=regression_line,
         ent_types=ent_types,
         selected_type=selected_type,
-        selected_mode=selected_mode
+        selected_mode=selected_mode,
+        max_x=max_x,
+        max_y=max_y
     )
+
+
+@data_bp.route('/correlation_ratio', methods=['GET', 'POST'])
+def correlation_ratio_page():
+    merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data, regression_line = analysis_util.get_correlation_ratio_data()
+
+    max_x = max([p['x'] for p in scatter_data]) * 1.2
+    max_y = max([p['y'] for p in scatter_data]) * 1.2
+
+    return render_template('data/analysis_1.html',
+                           merged_data=merged_df.to_dict(orient='records'),
+                           pearson_corr=pearson_corr,
+                           pearson_p=pearson_p,
+                           spearman_corr=spearman_corr,
+                           spearman_p=spearman_p,
+                           scatter_data=scatter_data,
+                           regression_line=regression_line,
+                           max_x=max_x, max_y=max_y)
