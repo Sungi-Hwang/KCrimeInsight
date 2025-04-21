@@ -1,5 +1,7 @@
 import pandas as pd
 import pymysql
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning)
 from scipy.stats import pearsonr, spearmanr, linregress
 
 def get_correlation_data(selected_type='전체'):
