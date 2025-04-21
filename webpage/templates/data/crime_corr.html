@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>상황변수-범죄유형 상관계수</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content_block %}
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>상황변수-범죄유형 상관계수</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+                    <li><a href="#">Analysis</a></li>
+                    <li class="active">상황변수-범죄유형 상관계수</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+<hr>
+
+<!-- 선택 폼 -->
+<form method="GET" class="form-inline mb-3">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label class="mr-2">상황변수 선택:</label>
+  <select name="value1" class="form-control mr-3">
+    {% for col in variables_columns %}
+    <option value="{{ col }}" {% if value1 == col %}selected{% endif %}>{{ col }}</option>
+    {% endfor %}
+  </select>
+
+  <label class="mr-2">범죄 선택:</label>
+  <select name="value2" class="form-control mr-3">
+    {% for col in crimes_columns %}
+    <option value="{{ col }}" {% if value2 == col %}selected{% endif %}>{{ col }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="btn btn-primary">적용</button>
+</form>
+
+<!-- 연도별 상관계수 이미지 -->
+<hr>
+<h4 class="mt-4">&nbsp;&nbsp;연도별 상관계수</h4>
+<br>
+<div>
+  <img src="{{ url_for('data.crime_chart4_image') }}?value1={{ value1 }}&value2={{ value2 }}"
+       style="max-width:100%; height:auto; border:1px solid #ccc; padding:4px;">
+</div>
+<br>
+
+<!-- 시도별 상관계수 Chart.js 그래프 -->
+<hr>
+<h4 class="mt-4">&nbsp;&nbsp;시도별 상관계수</h4>
+<br>
+<canvas id="crimeTypeChart" width="800" height="400"></canvas>
+<script>
+    if (window.myChart) {
+      window.myChart.destroy();
+    }
+  
+    const ctx = document.getElementById('crimeTypeChart').getContext('2d');
+    window.myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ labels | tojson }},
+        datasets: [{
+          label: '상관 관계',
+          data: {{ values | tojson }},
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: { min: -1, max: 1 }
+        }
+      }
+    });
+  </script>
+<br>
+<br>
+
+{% endblock %}
