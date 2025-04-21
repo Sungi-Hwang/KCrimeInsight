@@ -96,9 +96,9 @@
                     <div class="header-left">
                         <button class="search-trigger"><i class="fa fa-search"></i></button>
                         <div class="form-inline">
-                            <form class="search-form">
-                                <input class="form-control mr-sm-2" type="text" placeholder="Search ..." aria-label="Search">
-                                <button class="search-close" type="submit"><i class="fa fa-close"></i></button>
+                            <form id="searchForm" class="search-form">
+                                <input id="searchInput" class="form-control mr-sm-2" type="text" placeholder="Search ..." aria-label="Search">
+                                <button class="search-close" type="button"><i class="fa fa-close"></i></button>
                             </form>
                         </div>
                     </div>
@@ -112,9 +112,7 @@
                                 alt="User Avatar">
                         </a>
 
-                        <div class="user-menu dropdown-menu">    
-                            <a class="nav-link" href="#"><i class="fa fa-cog"></i> 설정</a>
-                            
+                        <div class="user-menu dropdown-menu"> 
                             {% if session.get('loginuser') %}
                             <a class="nav-link" href="#"><i class="fa fa-user"></i> 나의 프로필</a>
                             <!-- <a class="nav-link" href="#"><i class="fa fa-user"></i> Notifications <span class="count"></span></a> -->
@@ -148,104 +146,118 @@
     <script>
         (function($) {
             "use strict";
-            jQuery('#vmap').vectorMap({
-                map: 'southkorea_provinces',
-                backgroundColor: null,
-                enableZoom: false,
-                zoomOnScroll: false,
-                zoomButtons : false,  // 확대/축소 버튼 비활성화
-                panOnDrag: false,
-                regionStyle: {
-                    initial: {
-                        fill: '#B8E4F9',
-                        "fill-opacity": 0.7,
-                        stroke: '#1C1C1C',
-                        "stroke-width": 1,
-                        "stroke-opacity": 0.8
+
+            // vector map 초기화
+            if($('#vmap').length){
+                $('#vmap').vectorMap({
+                    map: 'southkorea_provinces',
+                    backgroundColor: null,
+                    enableZoom: false,
+                    zoomOnScroll: false,
+                    zoomButtons : false,
+                    panOnDrag: false,
+                    regionStyle: {
+                        initial: { fill: '#B8E4F9', "fill-opacity": 0.7, stroke: '#1C1C1C', "stroke-width": 1, "stroke-opacity": 0.8 },
+                        hover: { "fill-opacity": 0.8 }
                     },
-                    hover: {
-                        "fill-opacity": 0.8
-                    }
-                },
-                color: '#cceeff',
-                borderColor: '#666666',
-                borderWidth: 1.4,
-                hoverOpacity: 0.7,
-                selectedColor: '#009688',
-                enableZoom: true,
-                showTooltip: true,
-                normalizeFunction: 'polynomial',
-                // zoomMax: 20,
-                onRegionClick: function(event, code, region) {
-                    console.log("Clicked Region: ", region);
-    
-                    // 클릭한 지역의 범죄 데이터 요청
-                    $.ajax({
-                        url: '/data/get_crime_data_for_region', 
-                        method: 'GET',
-                        data: { region: region },  // 클릭한 지역 정보 전달
-                        success: function(response) {
-                            // 받은 데이터를 바탕으로 원그래프 표시
-                            showCrimePieChart(response);
-                        },
-                        error: function(err) {
-                            console.error("데이터를 불러오는 데 실패했습니다.", err);
-                        }
-                    });
-                }
-            });
-    
-            // 원그래프 그리기 함수
-            function showCrimePieChart(data) {
-                var ctx = document.getElementById('crimePieChart').getContext('2d');
-                var crimePieChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: data.labels,  // 서버에서 전달받은 레이블
-                        datasets: [{
-                            label: '범죄 유형 비율',
-                            data: data.values,  // 서버에서 전달받은 데이터 값
-                            backgroundColor: [
-                            '#FFB3BA',  // 소프트 레드
-                            '#FFDFBA',  // 라이트 오렌지
-                            '#FFFFBA',  // 라이트 옐로우
-                            '#BAFFC9',  // 라이트 민트
-                            '#BAE1FF',  // 소프트 블루
-                            '#C6C6FF',  // 연보라
-                            '#FFD6E0',  // 핑크 베이지
-                            '#FFF5BA',  // 크림
-                            '#D5F4E6',  // 민트 블루
-                            '#E2F0CB',  // 연그린
-                            '#F6DFEB',  // 소프트 핑크
-                            '#FFDAC1',  // 코랄 오렌지
-                            '#C7CEEA',  // 연보라 블루
-                            '#F8E9A1',  // 옅은 옐로우
-                            '#A8D0E6',  // 소프트 하늘색
-                            '#D3BCC0',  // 베이지 핑크
-                            '#B5EAD7'   // 소프트 민트그린
-                        ],
-                            hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
+                    color: '#cceeff',
+                    borderColor: '#666666',
+                    borderWidth: 1.4,
+                    hoverOpacity: 0.7,
+                    selectedColor: '#009688',
+                    enableZoom: true,
+                    showTooltip: true,
+                    normalizeFunction: 'polynomial',
+                    onRegionClick: function(event, code, region) {
+                        console.log("Clicked Region: ", region);
+                        $.ajax({
+                            url: '/data/get_crime_data_for_region',
+                            method: 'GET',
+                            data: { region: region },
+                            success: function(response) {
+                                showCrimePieChart(response);
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tooltipItem) {
-                                        return tooltipItem.label + ': ' + tooltipItem.raw;
+                            error: function(err) {
+                                console.error("데이터를 불러오는 데 실패했습니다.", err);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // 검색 기능 (엔터 + 돋보기 버튼)
+            function handleSearch() {
+                let query = $('#searchInput').val().trim().toLowerCase().replace(/\s/g, "");
+                if(query === '') return;
+
+                let found = false;
+
+                $('#left-panel a').each(function(){
+                    let menuText = $(this).text().trim().toLowerCase().replace(/\s/g, "");
+                    if(menuText.includes(query)){
+                        console.log("찾았다: " + menuText);
+                        window.location.href = $(this).attr('href');
+                        found = true;
+                        return false;
+                    }
+                });
+
+                if(!found){
+                    alert("해당 키워드의 메뉴를 찾을 수 없습니다.");
+                }
+            }
+
+            $(document).on('submit', '#searchForm', function(e){
+                e.preventDefault();
+                handleSearch();
+            });
+
+            $(document).on('click', '.search-trigger', function(){
+                handleSearch();
+            });
+
+            // 원그래프 그리기 함수 (id 확인)
+            window.showCrimePieChart = function(data) {
+                if(document.getElementById('crimePieChart')){
+                    var ctx = document.getElementById('crimePieChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: '범죄 유형 비율',
+                                data: data.values,
+                                backgroundColor: ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF',
+                                                '#C6C6FF', '#FFD6E0', '#FFF5BA', '#D5F4E6', '#E2F0CB',
+                                                '#F6DFEB', '#FFDAC1', '#C7CEEA', '#F8E9A1', '#A8D0E6',
+                                                '#D3BCC0', '#B5EAD7'],
+                                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(tooltipItem) {
+                                            return tooltipItem.label + ': ' + tooltipItem.raw;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
+
+            // 위젯 높이 설정 (존재 확인 후)
+            if(document.getElementById("someWidgetElement")){
+                document.getElementById("someWidgetElement").height = 320;
+            }
+
         })(jQuery);
-        
+
 
         // (function($) {
         //     "use strict";
