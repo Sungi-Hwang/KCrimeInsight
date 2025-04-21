@@ -95,13 +95,12 @@
                     },
                     options: {
                         scales: {
+                            x: { beginAtZero: true },
                             y: { beginAtZero: true }
                         }
                     }
                 });
-            </script>
-        
-            <script>
+
                 const ctx2 = document.getElementById('crimeTypeChart').getContext('2d');
                 const chart2 = new Chart(ctx2, {
                     type: 'bar',
@@ -117,10 +116,18 @@
                     },
                     options: {
                         scales: {
+                            x: { beginAtZero: true },
                             y: { beginAtZero: true }
                         }
                     }
                 });
+
+                if(document.getElementById('crimePieChart')){
+                    window.showCrimePieChart({
+                        labels: {{ total_labels | tojson }},
+                        values: {{ total_values | tojson }}
+                    });
+                }
             </script>
     
         <!-- .content -->

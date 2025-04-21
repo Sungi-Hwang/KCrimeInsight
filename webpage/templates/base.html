@@ -138,12 +138,12 @@
         {% endblock %} 
     
     </div>
-
     {% include "page_modules/common_js.html" %}
     {% block js_block %}
     {% endblock %}
     
     <script>
+        var crimePieChartInstance = null;
         (function($) {
             "use strict";
 
@@ -220,18 +220,39 @@
             window.showCrimePieChart = function(data) {
                 if(document.getElementById('crimePieChart')){
                     var ctx = document.getElementById('crimePieChart').getContext('2d');
-                    new Chart(ctx, {
+
+                    if(crimePieChartInstance !== null) {
+                        crimePieChartInstance.destroy();
+                    }
+
+                    // 값과 라벨 정렬
+                    let combined = data.labels.map((label, i) => {
+                        return { label: label, value: data.values[i] };
+                    });
+
+                    combined.sort((a, b) => b.value - a.value);
+
+                    // 상위 5개 인덱스 기억
+                    let top5Labels = combined.slice(0, 5).map(item => item.label);
+
+                    let finalLabels = combined.map(item => item.label);
+                    let finalValues = combined.map(item => item.value);
+
+                    crimePieChartInstance = new Chart(ctx, {
                         type: 'pie',
                         data: {
-                            labels: data.labels,
+                            labels: finalLabels,
                             datasets: [{
                                 label: '범죄 유형 비율',
-                                data: data.values,
+                                data: finalValues,
                                 backgroundColor: ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF',
                                                 '#C6C6FF', '#FFD6E0', '#FFF5BA', '#D5F4E6', '#E2F0CB',
                                                 '#F6DFEB', '#FFDAC1', '#C7CEEA', '#F8E9A1', '#A8D0E6',
                                                 '#D3BCC0', '#B5EAD7'],
-                                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                                                    '#7FDBFF', '#39CCCC', '#3D9970', '#2ECC40', '#01FF70',
+                                                    '#FF851B', '#FF4136', '#F012BE', '#B10DC9', '#85144b',
+                                                    '#AAAAAA', '#DDDDDD']
                             }]
                         },
                         options: {
@@ -240,13 +261,25 @@
                                 legend: { position: 'top' },
                                 tooltip: {
                                     callbacks: {
-                                        label: function(tooltipItem) {
-                                            return tooltipItem.label + ': ' + tooltipItem.raw;
+                                        label: function(context) {
+                                            let label = context.label || '기타';
+                                            let value = context.raw || 0;
+                                            return `${label}: ${value}`;
                                         }
+                                    }
+                                },
+                                datalabels: {
+                                    color: '#333',
+                                    font: { weight: 'bold' },
+                                    formatter: function(value, context) {
+                                        let label = context.chart.data.labels[context.dataIndex];
+                                        // 상위 5개만 라벨 표시
+                                        return top5Labels.includes(label) ? label : '';
                                     }
                                 }
                             }
-                        }
+                        },
+                        plugins: [ChartDataLabels]
                     });
                 }
             }
@@ -255,9 +288,7 @@
             if(document.getElementById("someWidgetElement")){
                 document.getElementById("someWidgetElement").height = 320;
             }
-
         })(jQuery);
-
 
         // (function($) {
         //     "use strict";

@@ -29,4 +29,6 @@ def index():
                            labels=chart_labels,
                            values=chart_values,
                            type_labels=type_labels,
-                           type_values=type_values)
+                           type_values=type_values,
+                           total_labels=type_labels,
+                           total_values=type_values)
