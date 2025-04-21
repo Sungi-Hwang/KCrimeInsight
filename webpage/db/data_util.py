@@ -205,3 +205,29 @@ def get_crime_data_for_region(region, year='2022'):
 
     finally:
         conn.close()
+
+
+def get_population_data():
+    try:
+        engine = create_engine("mysql+pymysql://teamuser:team1234@192.168.0.234:3306/1team_database")
+
+        # ✅ read_sql에 엔진 사용
+        df = pd.read_sql("SELECT * FROM crisis_people", con=engine)
+        print("🔥 컬럼명:", df.columns.tolist())
+        return df
+
+    except Exception as e:
+        print("데이터 불러오기 실패:", e)
+        return pd.DataFrame()
+
+        
+def get_crsis_code_data():
+    try:
+        engine = create_engine("mysql+pymysql://teamuser:team1234@192.168.0.234:3306/1team_database")
+        query = "SELECT * FROM crsis_code"
+        df = pd.read_sql(query, con = engine)
+        return df
+
+    except Exception as e:
+        print("데이터 불러오기 실패:", e)
+        return pd.DataFrame()

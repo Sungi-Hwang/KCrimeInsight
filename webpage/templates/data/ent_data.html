@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title_block %}
-<title>지역별 유흥 주점 table</title>
+<title>유흥주점 분포 table</title>
 {% endblock %}
 
 {% block content_block %}
@@ -10,7 +10,7 @@
             <div class="col-sm-4">
                 <div class="page-header float-left">
                     <div class="page-title">
-                        <h1>지역별 유흥 주점</h1>
+                        <h1>유흥주점 분포 현황</h1>
                     </div>
                 </div>
             </div>
@@ -20,7 +20,7 @@
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url_for('main.index')}}">Main Page</a></li>
                             <li><a href="#">Table</a></li>
-                            <li class="active">범죄 연관 Table</li>
+                            <li class="active">유흥 주점 Table</li>
                         </ol>
                     </div>
                 </div>
@@ -30,12 +30,8 @@
         <div class="content mt-3">
             <div class="animated fadeIn">
                 <div class="row">
-
                     <div class="col-md-12">
                         <div class="card">
-                            <div class="card-header">
-                                <strong class="card-title">Data Table</strong>
-                            </div>
                             <div class="card-body">
                                 <form method="get" action="{{ url_for('data.ent_data') }}" class="form-inline mb-3">
                                     <label for="per_page" class="mr-2">페이지당 표시 수:</label>

@@ -1,33 +1,31 @@
 {% extends 'base.html' %}
 
 {% block title_block %}
-<title>상황 변수에 따른 범죄 유형별 chart</title>
+<title>상황변수-범죄유형 시도별 상관계수</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content_block %}
 <div class="breadcrumbs">
-    <div class="col-sm-4">
+    <div class="col-sm-6">
         <div class="page-header float-left">
             <div class="page-title">
-                <h1>상황 변수에 따른 범죄 유형별 chart</h1>
+                <h1>상황변수-범죄유형 시도별 상관계수</h1>
             </div>
         </div>
     </div>
-    <div class="col-sm-8">
+    <div class="col-sm-6">
         <div class="page-header float-right">
             <div class="page-title">
                 <ol class="breadcrumb text-right">
                     <li><a href="{{url_for('main.index')}}">Main Page</a></li>
-                    <li><a href="#">chart</a></li>
-                    <li class="active">Crime Type Chart</li>
+                    <li><a href="#">Analysis</a></li>
+                    <li class="active">상황변수-범죄유형 시도별 상관계수</li>
                 </ol>
             </div>
         </div>
     </div>
 </div>
-
-<h2>&nbsp;&nbsp;&nbsp;상황 변수에 따른 범죄 유형별 통계</h2>
 <hr>
 
 <form method="POST">

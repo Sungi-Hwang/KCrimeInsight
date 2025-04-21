@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title_block %}
+<title>범죄 지역간 상관 분석</title>
+{% endblock %}
+
+{% block content_block %}
+<div class="content mt-3">
+  <div class="card">
+    <div class="card-body">
+
+      <!-- 지역 셀렉터 -->
+      <form method="get" action="{{ url_for('data.region_corr_page') }}">
+        <label class="font-weight-bold mb-2">📍 지역</label>
+        <select name="region" class="form-control"
+                onchange="this.form.submit()">
+          {% for r in region_options %}
+            <option value="{{ r }}" {% if r==selected_region %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <!-- 헤더 -->
+      <h5 class="mt-4">
+        <i class="fa fa-bar-chart"></i>
+        {{ selected_region }}의 범죄 발생률 상관관계&nbsp;(10만 명당)
+      </h5>
+      <p class="text-muted small mb-3">
+        ※ 단위: 발생률 = 인구 10만 명당 범죄 발생 건수
+      </p>
+
+      <!-- 히트맵 -->
+      <div class="text-center">
+        <img src="{{ url_for('static', filename='img/' + img_file) }}"
+             class="img-fluid border shadow-sm">
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

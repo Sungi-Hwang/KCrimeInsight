@@ -1,7 +1,26 @@
 {% extends 'base.html' %}
 
 {% block title_block %}
-<title>지역별 범죄 현황 table</title>
+<title>시도별 범죄 통계 table</title>
+
+<style>
+    #bootstrap-data-table-export {
+        table-layout: fixed;
+        width: 200%;
+    }
+
+    #bootstrap-data-table-export th, 
+    #bootstrap-data-table-export td {
+        word-wrap: break-word;
+        text-align: center;
+    }
+    .table-responsive-custom {
+    overflow-x: auto;
+    width: 100%;
+}
+
+</style>
+
 {% endblock %}
 
 {% block content_block %}
@@ -10,7 +29,7 @@
             <div class="col-sm-4">
                 <div class="page-header float-left">
                     <div class="page-title">
-                        <h1>지역별 범죄 현황</h1>
+                        <h1>시도별 범죄 통계</h1>
                     </div>
                 </div>
             </div>
@@ -20,7 +39,7 @@
                         <ol class="breadcrumb text-right">
                             <li><a href="{{url_for('main.index')}}">Main Page</a></li>
                             <li><a href="#">Table</a></li>
-                            <li class="active">범죄 연관 Table</li>
+                            <li class="active">범죄 통계 Table</li>
                         </ol>
                     </div>
                 </div>
@@ -33,9 +52,6 @@
 
                     <div class="col-md-12">
                         <div class="card">
-                            <div class="card-header">
-                                <strong class="card-title">Data Table</strong>
-                            </div>
                             <div class="card-body">
                                 <form method="get" action="{{ url_for('data.crime_data_11_22') }}" class="form-inline mb-3">
                                     <label for="per_page" class="mr-2">페이지당 표시 수:</label>
@@ -46,25 +62,27 @@
                                     </select>
                                     <input type="hidden" name="page" value="{{ page }}">
                                 </form>
-                                <table id="bootstrap-data-table-export" class="table table-striped table-bordered">
-                                    <thead>
-                                        <tr>
-                                            {% for c in df.columns %} 
-                                            <th>{{c}}</th>
+                                <div class="table-responsive-custom">
+                                    <table id="bootstrap-data-table-export" class="table table-striped table-bordered">
+                                        <thead>
+                                            <tr>
+                                                {% for c in df.columns %} 
+                                                <th>{{c}}</th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in df.values %}  <!-- dataframe의 행 반복 -->
+                                            <tr class="tr-shadow">
+                                                {% for v in row %}      <!-- 각 행의 값 -->
+                                                <td>{{v}}</td>
+                                                {% endfor %}
+                                            </tr>
+                                            <tr class="spacer"></tr>
                                             {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for row in df.values %}  <!-- dataframe의 행 반복 -->
-                                        <tr class="tr-shadow">
-                                            {% for v in row %}      <!-- 각 행의 값 -->
-                                            <td>{{v}}</td>
-                                            {% endfor %}
-                                        </tr>
-                                        <tr class="spacer"></tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                        </tbody>
+                                    </table>
+                                </div>
                                 <div class="text-center mt-3">
                                     <ul class="pagination justify-content-center">
 

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>상황변수-범죄유형 연도별 상관계수</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content_block %}
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>상황변수-범죄유형 연도별 상관계수</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+                    <li><a href="#">Analysis</a></li>
+                    <li class="active">상황변수-범죄유형 연도별 상관계수</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+<hr>
+
+<form method="POST">
+    <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;상황 변수:</label>
+    <select name="value1">
+        {% for col in variables_columns %}
+            <option value="{{ col }}" {% if value1 == col %}selected{% endif %}>{{ col }}</option>
+        {% endfor %}
+    </select>
+
+    <label>&nbsp;&nbsp;&nbsp;범죄 유형:</label>
+    <select name="value2">
+        {% for col in crimes_columns %}
+            <option value="{{ col }}" {% if value2 == col %}selected{% endif %}>{{ col }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">보기</button>
+</form>
+
+{% if value1 and value2 %}
+    <hr>
+    <img src="{{ url_for('data.crime_chart4_image') }}?value1={{ value1 }}&value2={{ value2 }}&t={{now}}" 
+         alt="상관관계 그래프" style="max-width:100%;">
+{% endif %}
+
+
+
+
+
+{% endblock %}

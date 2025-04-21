@@ -4,25 +4,26 @@ matplotlib.use('Agg')
 from flask import Blueprint
 from flask import render_template, redirect, url_for
 from flask import request, jsonify
+from flask import send_file
+from datetime import datetime
 
-from pathlib import Path
 
-import os
-import math
-
-import pymysql
 import pandas as pd
-import yfinance as yf
-import io, base64
 import matplotlib.pyplot as plt
 import seaborn as sns
+import yfinance as yf
+import os, io, base64, re, math
+import plotly.io as pio
+import plotly.express as px
 
+from pathlib import Path
 from ..db import data_util
 from ..db import ent_util
 from ..db import analysis_util
 from ..db import variables_util
 from ..db import crime_final_kyle_util
 from ..db import merged_kyle_util
+
 
 data_bp = Blueprint("data", __name__, url_prefix="/data")
 
@@ -163,6 +164,7 @@ def crime_data_11_22():
         display_pages=display_pages
     )
 
+
 # ---------------- ent_data 함수 ---------------- #
 @data_bp.route("/ent_data", methods=['GET'])
 def ent_data():
@@ -187,7 +189,6 @@ def ent_data():
         total_pages=total_pages,
         display_pages=display_pages
     )
-
 
 # ---------------- variables_data 함수 ---------------- #
 @data_bp.route("/variables_data", methods=['GET'])
@@ -366,6 +367,140 @@ def crime_chart3():
         value1=value1,
         value2=value2)
 
+@data_bp.route('/crime_chart4', methods=['GET', 'POST'])
+def crime_chart4():
+
+    variables_columns = ['경찰관수', '다문화 혼인 비중(％)', '음주 표준화율 (％)', '실업률 (％)', '1인 가구 비율']
+    crimes_columns = ['강간_통합', '강력범죄_통합', '도박_통합', '방화_통합', '사기_통합', '살인_통합',
+                    '절도_통합', '폭력_통합', '협박_통합']
+    
+    value1 = value2 = ""
+
+    if request.method == 'POST':
+        value1 = request.form.get('value1')
+        value2 = request.form.get('value2')
+
+    return render_template(
+        'data/crime_chart4.html',
+        variables_columns=variables_columns,
+        crimes_columns=crimes_columns,
+        value1=value1,
+        value2=value2,
+        now=datetime.now().timestamp()
+    )
+
+
+@data_bp.route('/crime_chart4/image', methods=['GET'])  # 이미지 표시용은 GET만 쓰자
+def crime_chart4_image():
+    
+    value1 = request.args.get('value1')
+    value2 = request.args.get('value2')
+
+    if not value1 or not value2:
+        return "value1, value2 값이 필요합니다.", 400
+
+    # 데이터 불러오기
+    df_var = pd.DataFrame(variables_util.variables_data())
+    df_crimes = pd.DataFrame(crime_final_kyle_util.crimes_data())
+
+    df_var['연도'] = df_var['연도'].astype(int)
+    df_crimes['연도'] = df_crimes['연도'].astype(int)
+
+    df_var = df_var[df_var['연도'].isin([2021, 2022, 2023])]
+    df_crimes = df_crimes[df_crimes['연도'].isin([2021, 2022, 2023])]
+
+    df = pd.merge(df_var, df_crimes, on=['region', '연도'], how='left')
+
+    value1_col = value1 + "_x" if value1 + "_x" in df.columns else value1
+    value2_col = value2 + "_y" if value2 + "_y" in df.columns else value2
+
+    # 상관계수 계산
+    correlation_by_year = {}
+    for year in [2021, 2022, 2023]:
+        temp_df = df[df['연도'] == year]
+        correlation_by_year[str(year)] = temp_df[value1_col].corr(temp_df[value2_col])
+    correlation_by_year['전체 평균'] = df[value1_col].corr(df[value2_col])
+
+    # 그래프 생성
+    labels = list(correlation_by_year.keys())
+    values = list(correlation_by_year.values())
+    colors = ['skyblue', 'salmon', 'mediumseagreen', 'mediumpurple']
+
+    plt.rcParams['font.family'] = 'Malgun Gothic'
+    plt.rcParams['axes.unicode_minus'] = False
+    
+    plt.figure(figsize=(8, 5))
+    bars = plt.bar(labels, values, color=colors)
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text( 
+            bar.get_x() + bar.get_width() / 2,   # 막대 중앙 x
+            yval / 2,                            # 막대 높이의 절반 (내부 중앙)
+            f'{yval:.2f}',                       # 텍스트
+            ha='center', va='center', fontsize=11, color='white', fontweight='bold'
+            )
+
+    plt.ylim(-1, 1)
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.title(f"{value1} vs {value2} 연도별 상관관계")
+    plt.ylabel("상관계수")
+    plt.tight_layout()
+
+    # 이미지로 반환
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
+    return send_file(img, mimetype='image/png')
+
+import pprint
+
+@data_bp.route('/crime_corr', methods=['GET', 'POST'])
+def crime_corr_page():
+    variables_columns = ['경찰관수', '다문화 혼인 비중(％)', '음주 표준화율 (％)', '실업률 (％)', '1인 가구 비율']
+    crimes_columns = ['강간_통합', '강력범죄_통합', '도박_통합', '방화_통합', '사기_통합', '살인_통합',
+                      '절도_통합', '폭력_통합', '협박_통합']
+
+    value1 = request.values.get("value1")
+    value2 = request.values.get("value2")
+
+
+    labels, values = [], []
+
+    if value1 and value2:
+
+        df_var = pd.DataFrame(variables_util.variables_data())
+        df_crimes = pd.DataFrame(crime_final_kyle_util.crimes_data())
+
+
+        df_var['연도'] = df_var['연도'].astype(int)
+        df_crimes['연도'] = df_crimes['연도'].astype(int)
+
+        df = pd.merge(df_var, df_crimes, on=['region', '연도'], how='left')
+
+
+        value1_col = value1 + "_x" if value1 + "_x" in df.columns else value1
+        value2_col = value2 + "_y" if value2 + "_y" in df.columns else value2
+
+
+        corr_df = df.groupby('region').apply(
+            lambda g: g[value1_col].corr(g[value2_col])
+        ).reset_index(name='corr')
+
+        labels = corr_df['region'].tolist()
+        values = corr_df['corr'].tolist()
+
+    return render_template(
+        "data/crime_corr.html",
+        variables_columns=variables_columns,
+        crimes_columns=crimes_columns,
+        value1=value1 or '',
+        value2=value2 or '',
+        labels=labels,
+        values=values
+    )
+
 # ---------------- 히트맵 함수 ---------------- #
 @data_bp.route('/crime_heatmap', methods=['GET', 'POST'])
 def crime_heatmap():
@@ -437,4 +572,177 @@ def crime_heatmap():
         years=years,
         selected_year=selected_year,
         heatmaps=heatmaps
+    )
+
+
+
+# ✅ Updated crime_insight_page with Plotly-based interactive charts
+@data_bp.route("/insight", methods=["GET", "POST"])
+def crime_insight_page():
+    import pandas as pd, re
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import plotly.figure_factory as ff
+    from ..db.data_util import get_population_data, get_crsis_code_data
+
+    # ─────────── 데이터 준비 ───────────
+    df = get_population_data()
+    detail_df = get_crsis_code_data()
+    df.rename(columns={"year": "연도", "region": "지역"}, inplace=True)
+
+    meta_cols = ["연도", "지역", "population"]
+    crime_cols = [c for c in df.columns if c not in meta_cols]
+    for c in crime_cols:
+        df[f"{c}_rate"] = df[c] / df["population"] * 1e3
+    rate_cols = [c for c in df.columns if c.endswith("_rate")]
+
+    # ─────────── UI 선택값 ───────────
+    crime_categories = detail_df["사용자정의분류"].tolist()
+    selected_category = request.form.get("category", crime_categories[0])
+    region_options = ["전국"] + sorted(df["지역"].unique())
+    selected_region = request.form.get("region", "전국")
+
+    # ─────────── 상관계수 히트맵 데이터 ───────────
+    region_df = df.groupby("연도")[rate_cols].mean() if selected_region == "전국" else df[df["지역"] == selected_region][rate_cols]
+    region_df = region_df.drop(columns=["연도"], errors="ignore")
+
+    corr = region_df.corr()
+    labels = [col.replace("_rate", " 발생률") for col in corr.columns]
+    corr.columns = labels
+    corr.index = labels
+
+    fig_heatmap = ff.create_annotated_heatmap(
+        z=corr.values.round(2),
+        x=labels,
+        y=labels,
+        colorscale='RdBu',
+        zmin=-1,
+        zmax=1,
+        showscale=True,
+        annotation_text=corr.values.round(2)
+    )
+    heatmap_html = fig_heatmap.to_html(full_html=False)
+
+    # ─────────── 라벨 매핑 ───────────
+    rate_label_map = {col: col.replace("_rate", " 발생률") for col in rate_cols}
+    label_to_col = {v: k for k, v in rate_label_map.items()}
+    trend_labels = list(label_to_col.keys())
+
+    selected_trend1 = request.form.get("trend_crime1", trend_labels[0])
+    selected_trend2 = request.form.get("trend_crime2", trend_labels[1] if len(trend_labels) > 1 else trend_labels[0])
+    trend_col1 = label_to_col[selected_trend1]
+    trend_col2 = label_to_col[selected_trend2]
+
+    line_df = df.groupby("연도")[[trend_col1, trend_col2]].mean().reset_index() if selected_region == "전국" else df[df["지역"] == selected_region][["연도", trend_col1, trend_col2]]
+
+    # ─────────── 이중 y축 Plotly ───────────
+    fig_compare = go.Figure()
+    fig_compare.add_trace(go.Scatter(
+        x=line_df["연도"], y=line_df[trend_col1], name=selected_trend1,
+        yaxis="y1", mode="lines+markers"
+    ))
+    fig_compare.add_trace(go.Scatter(
+        x=line_df["연도"], y=line_df[trend_col2], name=selected_trend2,
+        yaxis="y2", mode="lines+markers", line=dict(dash="dot")
+    ))
+    fig_compare.update_layout(
+        title="이중 Y축 범죄 추이",
+        xaxis=dict(title="연도"),
+        yaxis=dict(title=selected_trend1),
+        yaxis2=dict(title=selected_trend2, overlaying='y', side='right')
+    )
+    compare_trend_html = fig_compare.to_html(full_html=False)
+
+    # ─────────── 단일 범죄 Plotly ───────────
+    selected_trend = request.form.get("trend_crime", trend_labels[0])
+    trend_col = label_to_col[selected_trend]
+    trend_df = df[["연도", "지역", trend_col]].copy()
+    trend_df["발생률"] = trend_df[trend_col]
+
+    fig_trend = px.line(
+        trend_df, x="연도", y="발생률", color="지역", markers=True,
+        title=f"{selected_trend} - 지역별 연도별 발생률 추이",
+        labels={"발생률": "건/10만명"}, custom_data=["지역"]
+    )
+    fig_trend.update_traces(
+        mode="lines+markers",
+        hovertemplate="연도: %{x}<br>발생률: %{y:.2f}<br>지역: %{customdata[0]}"
+    )
+    trend_html = fig_trend.to_html(full_html=False)
+
+    # ─────────── 세부 범죄 설명 처리 ───────────
+    raw_detail = detail_df[detail_df["사용자정의분류"] == selected_category]["C1_NM"].values[0]
+    selected_details = ", ".join(re.findall(r"'([^']+)'", raw_detail)) if isinstance(raw_detail, str) else ", ".join(raw_detail)
+
+    return render_template(
+        "data/crime_insight.html",
+        crime_categories=crime_categories,
+        selected_category=selected_category,
+        selected_details=selected_details,
+        region_options=region_options,
+        selected_region=selected_region,
+        heatmap_html=heatmap_html,
+        compare_trend_html=compare_trend_html,
+        trend_html=trend_html,
+        trend_labels=trend_labels,
+        selected_trend=selected_trend,
+        selected_trend1=selected_trend1,
+        selected_trend2=selected_trend2
+    )
+
+
+@data_bp.route("/region_corr", methods=["GET"])
+def region_corr_page():
+    import os, re, pandas as pd, matplotlib.pyplot as plt, seaborn as sns
+    from ..db.data_util import get_population_data
+
+    df = get_population_data()
+    df.rename(columns={"year":"연도", "region":"지역"}, inplace=True)
+
+    meta_cols = ["연도", "지역", "population"]
+    crime_cols = [c for c in df.columns if c not in meta_cols]
+
+    for c in crime_cols:
+        df[f"{c}_rate"] = df[c] / df["population"] * 1e5
+
+    rate_cols = [c for c in df.columns if c.endswith("_rate")]
+
+    # ---------- 선택값 ----------
+    region_options  = ["전국"] + sorted(df["지역"].unique())
+    selected_region = request.args.get("region", "전국")   # ← GET 으로 받는다
+
+    # ---------- 상관계수 ----------
+    if selected_region == "전국":
+        region_df = df.groupby("연도")[rate_cols].mean().reset_index()
+    else:
+        region_df = df[df["지역"] == selected_region].copy()
+
+    region_df = region_df.drop(columns=["연도"], errors="ignore")
+
+    corr = region_df.corr().rename(
+        columns=lambda c: c.replace("_rate","발생률"),
+        index   =lambda c: c.replace("_rate","발생률")
+    )
+
+    # ---------- 캐싱된 히트맵 ----------
+    safe   = re.sub(r"[^가-힣A-Za-z0-9]", "_", selected_region)
+    img_fn = f"hm_{safe}.png"
+    img_fp = os.path.join("static", "img", img_fn)
+
+    if not os.path.exists(img_fp):
+        sns.set(font="Malgun Gothic")           # 한글 라벨 깨짐 방지
+        fig, ax = plt.subplots(figsize=(10, 8))
+        sns.heatmap(corr, cmap="coolwarm", vmin=-1, vmax=1,
+                    annot=True, fmt=".2f", square=True,
+                    linewidths=.5, ax=ax)
+        fig.tight_layout()
+        os.makedirs(os.path.dirname(img_fp), exist_ok=True)
+        fig.savefig(img_fp, dpi=150)
+        plt.close(fig)
+
+    return render_template(
+        "data/region_corr.html",
+        region_options = region_options,
+        selected_region= selected_region,
+        img_file       = img_fn
     )

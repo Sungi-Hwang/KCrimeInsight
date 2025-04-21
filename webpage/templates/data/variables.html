@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title_block %}
-<title>지역별 상황 변수</title>
+<title>시도별 상황 변수</title>
 {% endblock %}
 
 {% block content_block %}
@@ -10,7 +10,7 @@
             <div class="col-sm-4">
                 <div class="page-header float-left">
                     <div class="page-title">
-                        <h1>지역별 상황 변수</h1>
+                        <h1>시도별 상황 변수</h1>
                     </div>
                 </div>
             </div>
@@ -33,9 +33,6 @@
 
                     <div class="col-md-12">
                         <div class="card">
-                            <div class="card-header">
-                                <strong class="card-title">Data Table</strong>
-                            </div>
                             <div class="card-body">
                                 <form method="get" action="{{ url_for('data.variables_data') }}" class="form-inline mb-3">
                                     <label for="per_page" class="mr-2">페이지당 표시 수:</label>
