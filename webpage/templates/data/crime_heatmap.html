@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>상관관계 히트맵</title>
+{% endblock %}
+
+{% block content_block %}
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>📊 연도별 상관관계 히트맵</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+                    <li><a href="#">chart</a></li>
+                    <li class="active">Crime Type Chart</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>&nbsp;&nbsp;&nbsp;📊 연도별 상관관계 히트맵</h2>
+<hr>
+
+
+<form method="POST">
+    <label for="selected_year">연도 선택:</label>
+    <select name="selected_year" id="selected_year">
+      <option value="전체" {% if selected_year == "전체" %}selected{% endif %}>전체</option>
+      {% for year in years %}
+        <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">보기</button>
+</form>
+
+{% if heatmaps %}
+    {% for year, img in heatmaps %}
+        <h2>{{ year }}년 상관관계 히트맵</h2>
+        <img src="data:image/png;base64,{{ img }}" alt="{{ year }} 히트맵">
+    {% endfor %}
+{% endif %}
+
+{% endblock %}

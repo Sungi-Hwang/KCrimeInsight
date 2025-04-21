@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>상황 변수에 따른 범죄 유형별 chart</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content_block %}
+<div class="breadcrumbs">
+    <div class="col-sm-4">
+        <div class="page-header float-left">
+            <div class="page-title">
+                <h1>상황 변수에 따른 범죄 유형별 chart</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="page-header float-right">
+            <div class="page-title">
+                <ol class="breadcrumb text-right">
+                    <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+                    <li><a href="#">chart</a></li>
+                    <li class="active">Crime Type Chart</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>&nbsp;&nbsp;&nbsp;상황 변수에 따른 범죄 유형별 통계</h2>
+<hr>
+
+<form method="POST">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<label for="varialbe">상황변수 선택:</label>
+    <select name="value1" id="value1">
+        {% for col in variables_columns %}
+            {% if value1 == col %}
+            <option value="{{ col }}" selected>{{col}}</option>
+            {% else %}
+            <option value="{{ col }}">{{col}}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    &nbsp;&nbsp;<label for="crimes">범죄 선택:</label>
+    <select name="value2" id="value2">
+        {% for col in crimes_columns %}
+            {% if value2 == col %}
+            <option value="{{ col }}" selected>{{col}}</option>
+            {% else %}
+            <option value="{{ col }}">{{col}}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <button type="submit">적용</button>
+</form>
+
+<canvas id="crimeTypeChart" width="800" height="400"></canvas>
+
+<script>
+    const ctx = document.getElementById('crimeTypeChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ labels | tojson }},
+            datasets: [{
+                label: '상관 관계',
+                data: {{ values | tojson }},
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

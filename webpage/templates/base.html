@@ -42,6 +42,7 @@
                         <ul class="sub-menu children dropdown-menu">
                             <li><i class="fa fa-table"></i><a href="{{ url_for('data.crime_data_11_22') }}">범죄 현황 Table</a></li>
                             <li><i class="fa fa-table"></i><a href="{{ url_for('data.ent_data') }}">유흥 주점 table</a></li>
+                            <li><i class="fa fa-table"></i><a href="{{ url_for('data.variables_data') }}">상황 변수 table</a></li>
                         </ul>
                     </li>
                     <li class="menu-item-has-children dropdown">
@@ -49,7 +50,7 @@
                         <ul class="sub-menu children dropdown-menu">
                             <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart') }}">지역별 범죄 chart</a></li>
                             <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart2') }}">범죄 유형별 chart</a></li>
-                            <li><i class="menu-icon fa fa-pie-chart"></i><a href="charts-peity.html">Peity Chart</a></li>                            
+                            <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_chart3') }}">상황 변수에 따른 범죄 유형별 chart</a></li>                          
                         </ul>
                     </li>
                     <h3 class="menu-title">범죄 분석</h3>
@@ -58,6 +59,7 @@
                             <i class="menu-icon fa fa-line-chart"></i>Analysis
                         </a>
                         <ul class="sub-menu children dropdown-menu">
+                            <li><i class="menu-icon fa fa-area-chart"></i><a href="{{ url_for('data.crime_heatmap') }}">연도별 상관관계 히트맵</a></li>
                             <li><i class="menu-icon fa fa-line-chart"></i><a href="{{ url_for('data.correlation_page') }}">유흥업소-폭력범죄 상관분석</a></li>
                         </ul>
                     </li>
