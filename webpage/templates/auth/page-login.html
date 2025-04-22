@@ -39,7 +39,7 @@
                             <label>
                                 <input type="checkbox" name="remember"> 로그인 상태 유지
                             </label>
-                            <label class="pull-right"><a href="#">비밀번호 찾기</a></label>
+                            <label class="pull-right"><a href="{{ url_for('auth.forget_password') }}">비밀번호 찾기</a></label>
                         </div>
                         <br>
                         <button type="submit" class="btn btn-success btn-flat m-b-30 m-t-30">로그인</button>
