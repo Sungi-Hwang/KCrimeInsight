@@ -160,7 +160,7 @@ def get_correlation_ratio_data(selected_type='전체'):
             round(spearman_corr, 3), round(spearman_p, 4),
             scatter_data, regression_line)
 
-def get_density_correlation_data(selected_type='전체',  ent_basis='area', crime_basis='area'):
+def get_density_correlation_data(selected_type='전체',  ent_basis='area', crime_basis='area', remove_outliers=False):
     try:
         conn = pymysql.connect(
             host='192.168.0.234',
@@ -230,6 +230,21 @@ def get_density_correlation_data(selected_type='전체',  ent_basis='area', crim
             {"x": row["업소밀집도"], "y": row["폭력범죄밀집도"], "title": row["자치구명"]}
             for _, row in merged_df.iterrows()
         ]
+
+        # 🔥 아웃라이어 제거 (선택)
+        if remove_outliers:
+            Q1_x = merged_df['업소밀집도'].quantile(0.25)
+            Q3_x = merged_df['업소밀집도'].quantile(0.75)
+            IQR_x = Q3_x - Q1_x
+
+            Q1_y = merged_df['폭력범죄밀집도'].quantile(0.25)
+            Q3_y = merged_df['폭력범죄밀집도'].quantile(0.75)
+            IQR_y = Q3_y - Q1_y
+
+            merged_df = merged_df[
+                (merged_df['업소밀집도'] >= Q1_x - 1.5 * IQR_x) & (merged_df['업소밀집도'] <= Q3_x + 1.5 * IQR_x) &
+                (merged_df['폭력범죄밀집도'] >= Q1_y - 1.5 * IQR_y) & (merged_df['폭력범죄밀집도'] <= Q3_y + 1.5 * IQR_y)
+            ]
 
 
         # 상관계수 계산

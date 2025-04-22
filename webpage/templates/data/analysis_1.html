@@ -100,15 +100,20 @@
         <option value="population" {% if crime_density_basis == 'population' %}selected{% endif %}>인구수</option>
       </select>
 
+      <label>
+        <input type="checkbox" id="removeOutliers" name="remove_outliers" value="true" {% if remove_outliers == 'true' %}checked{% endif %}>
+        아웃라이어 제외
+      </label>
+
       <input type="hidden" name="mode" value="밀집도">
       <input type="hidden" name="active_tab" value="district">
       <button type="submit">시군구 분석</button>
     </form>
 
     <h5 class="mt-3">상관계수 결과</h5>
-    <p>Pearson: {{ pearson_corr }} (p={{ pearson_p }})</p>
-    <p>Spearman: {{ spearman_corr }} (p={{ spearman_p }})</p>
-
+    <p>Pearson: <span id="pearsonValue">{{ pearson_corr }}</span></p>
+    <p>Spearman: <span id="spearmanValue">{{ spearman_corr }}</span></p>
+    
     <canvas id="scatterChart2"></canvas>
 
     <table id="districtTable" class="table table-striped mt-3">
@@ -276,6 +281,39 @@ const scatterChart2 = new Chart(ctx2, {
       }
     }
   }
+});
+
+function updateChart() {
+  let formData = new FormData();
+  formData.append('ent_type', $('select[name="ent_type"]').val());
+  formData.append('ent_density_basis', $('select[name="ent_density_basis"]').val());
+  formData.append('crime_density_basis', $('select[name="crime_density_basis"]').val());
+  formData.append('remove_outliers', $('#removeOutliers').is(':checked'));
+
+  $.ajax({
+    url: "/data/get_density_chart_data",
+    type: "POST",
+    data: formData,
+    processData: false,
+    contentType: false,
+    success: function(response) {
+      // 차트 데이터 갱신
+      scatterChart2.data.datasets[0].data = response.scatter_data;
+      scatterChart2.data.datasets[1].data = response.regression_line;
+      scatterChart2.options.scales.x.max = response.max_x;
+      scatterChart2.options.scales.y.max = response.max_y;
+      scatterChart2.update();
+
+      // 상관계수 값 갱신
+      $('#pearsonValue').text(response.pearson_corr);
+      $('#spearmanValue').text(response.spearman_corr);
+    }
+  });
+}
+
+
+$('#removeOutliers').change(function() {
+  updateChart();
 });
 
 // 회귀선 온오프 함수

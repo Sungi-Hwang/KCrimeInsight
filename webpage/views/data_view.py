@@ -176,9 +176,10 @@ def correlation_page():
     density_basis = request.form.get("density_basis", "area")
     ent_density_basis = request.form.get('ent_density_basis', 'area')
     crime_density_basis = request.form.get('crime_density_basis', 'area')
+    remove_outliers = request.form.get('remove_outliers', 'false')
 
     result = analysis_util.get_density_correlation_data(
-        selected_type, ent_density_basis, crime_density_basis
+        selected_type, ent_density_basis, crime_density_basis, remove_outliers == 'true'
     )
 
 
@@ -246,7 +247,40 @@ def correlation_page():
         density_basis=density_basis,
         ent_density_basis=ent_density_basis,
         crime_density_basis=crime_density_basis,
+        remove_outliers=remove_outliers
     )
+
+@data_bp.route('/get_density_chart_data', methods=['POST'])
+def get_density_chart_data():
+    selected_type = request.form.get('ent_type', '전체')
+    ent_basis = request.form.get('ent_density_basis', 'area')
+    crime_basis = request.form.get('crime_density_basis', 'area')
+    remove_outliers = request.form.get('remove_outliers', 'false')
+
+    result = analysis_util.get_density_correlation_data(
+        selected_type, ent_basis, crime_basis, remove_outliers == 'true'
+    )
+
+    if result[0] is None:
+        return jsonify({
+            'scatter_data': [], 'regression_line': [],
+            'pearson_corr': 0, 'spearman_corr': 0,
+            'max_x': 1, 'max_y': 1
+        })
+
+    (merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p,
+    scatter_data, regression_line, max_x, max_y) = result
+
+    return jsonify({
+        'scatter_data': scatter_data,
+        'regression_line': regression_line,
+        'pearson_corr': pearson_corr,
+        'pearson_p': pearson_p,
+        'spearman_corr': spearman_corr,
+        'spearman_p': spearman_p,
+        'max_x': max_x,
+        'max_y': max_y
+    })
 
 # ---------------- 비율 페이지 함수 ---------------- #
 @data_bp.route('/correlation_ratio', methods=['GET', 'POST'])
