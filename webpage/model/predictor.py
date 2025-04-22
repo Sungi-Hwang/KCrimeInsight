@@ -10,7 +10,7 @@ from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 
 class CrimePredictor:
-    def __init__(self, top_n: int = 15):
+    def __init__(self, top_n: int = 5):
         self.top_n     = top_n
         self.cols: List[str] = []
         self.model     = None
