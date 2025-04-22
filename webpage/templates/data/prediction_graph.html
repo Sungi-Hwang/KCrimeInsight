@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title_block %}
+<title>범죄 예측 결과</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+
+    h1 {
+        text-align: center;
+        color: #333;
+    }
+    p.description {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #555;
+    }
+    .graph-row {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+    img.graph {
+        width: 48%;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background: white;
+        padding: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content_block %}
+    <!-- Right Panel 2 -->
+    <div class="breadcrumbs">
+        <div class="col-sm-6">
+            <div class="page-header float-left">
+                <div class="page-title">
+                    <h1>범죄 예측 결과</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="page-header float-right">
+                <div class="page-title">
+                    <ol class="breadcrumb text-right">
+                        <li><a href="{{url_for('main.index')}}">Main Page</a></li>
+                        <li><a href="#">analysis</a></li>
+                        <li class="active">범죄 예측 결과</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+
+    <div class="graph-description">
+        <h2>📊 범죄 예측 결과</h2>
+        <p>
+            아래 그래프는 <strong>예측한 범죄 건수</strong>와 <strong>실제로 일어난 범죄 건수</strong>를 비교한 것입니다.<br>
+            파란 점은 <strong>실제로 발생한 범죄 수치</strong>를,  
+            빨간 점선은 <strong>정확하게 예측했을 때의 기준선</strong>을 의미합니다.
+        </p>
+        <p>
+            점들이 빨간 선과 가까울수록 <strong>예측이 잘 맞았다는 뜻</strong>입니다.
+        </p>
+        <p>
+            또한, 각 그래프 아래에는 다음과 같은 지표가 표시되어 있습니다:
+        </p>
+        <ul>
+            <li><strong>MAE (평균 오차)</strong> – 예측이 실제와 <u>얼마나 차이 나는지를 나타냅니다.</u> 값이 작을수록 정확합니다.</li>
+            <li><strong>R² (설명력)</strong> – 예측이 실제 데이터를 <u>얼마나 잘 설명하고 있는지를 나타냅니다.</u> 1에 가까울수록 좋습니다.</li>
+        </ul>
+    </div>
+
+    {% for i in range(1, graph_count + 1) %}
+        <div class="graph-row">
+            <img src="{{ url_for('static', filename='images/graphs/graph_' + i|string + '.png') }}"
+                    class="prediction-graph" alt="graph_{{ i }}">
+        </div>
+    {% endfor %}
+    <style>
+        .graph-description {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #f9f9fc;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-family: 'Malgun Gothic', sans-serif;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            line-height: 1.7;
+            color: #333;
+        }
+    
+        .graph-description h2 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 20px;
+        }
+    
+        .graph-description ul {
+            margin-top: 10px;
+            padding-left: 25px;
+        }
+    
+        .graph-description li {
+            margin-bottom: 10px;
+        }
+    
+        .graph-description strong {
+            color: #1a73e8;
+        }
+    
+        .graph-description u {
+            text-decoration-color: #aaa;
+        }
+    </style>
+
+{% endblock %}
+

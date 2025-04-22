@@ -6,9 +6,10 @@ from flask import render_template, redirect, url_for
 from flask import request, jsonify
 from flask import send_file
 from datetime import datetime
-
+#from webpage.model.predictor import predict_one
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import yfinance as yf
@@ -28,8 +29,97 @@ from ..db import merged_kyle_util
 data_bp = Blueprint("data", __name__, url_prefix="/data")
 
 
-# ---------------- 페이징 처리 함수 ---------------- #
+@data_bp.route('/prediction_graph')
+def prediction_graph():
+    graph_path = os.path.join('webpage', 'static', 'images', 'graphs', 'graph_1.png')
 
+    # 만약 첫 번째 그래프 이미지가 존재하면 학습/생성 생략
+    if os.path.exists(graph_path):
+        print("✅ 기존 그래프 존재 — 바로 페이지 렌더링")
+        graph_count = len([name for name in os.listdir(os.path.dirname(graph_path)) if name.startswith('graph_') and name.endswith('.png')])
+        return render_template('data/prediction_graph.html', graph_count=graph_count)
+
+
+    # 데이터 불러오기 및 모델 결과 계산
+    df_crime = pd.DataFrame(data_util.chart_crime())
+    df_var = pd.DataFrame(variables_util.variables_data())
+    df_var = df_var.rename(columns={'region': '지역'})
+    merged_df = pd.merge(df_var, df_crime, on=['연도', '지역'], how='inner')
+
+    X = merged_df[['경찰관수', '다문화 혼인 비중(％)', '음주 표준화율 (％)', '실업률 (％)', '1인 가구 비율']]
+    y = merged_df.drop(columns=['연도', '지역'] + X.columns.tolist())
+
+    from sklearn.linear_model import LinearRegression
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import r2_score
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = MultiOutputRegressor(LinearRegression())
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    comparison_df = y_test.reset_index(drop=True).copy()
+    for i, col in enumerate(y.columns):
+        comparison_df[f'{col}_예측'] = y_pred[:, i]
+
+    mae_r2_per_crime = {
+        col: {
+            'mae': round(np.mean(np.abs(comparison_df[col] - comparison_df[f'{col}_예측'])), 2),
+            'r2': round(r2_score(comparison_df[col], comparison_df[f'{col}_예측']), 2)
+        }
+        for col in y.columns
+    }
+
+    # 그래프 생성 및 저장
+    crime_columns = list(y.columns)
+    chunks = [crime_columns[i:i + 2] for i in range(0, len(crime_columns), 2)]  # 좌우 2개씩 나열
+
+    plt.rcParams['font.family'] = 'Malgun Gothic'
+    plt.rcParams['axes.unicode_minus'] = False
+
+    for idx, subset in enumerate(chunks):
+        print(f"🔄 루프 {idx+1}: {subset}")
+        fig, axs = plt.subplots(1, 2, figsize=(22, 10))
+        for i, col in enumerate(subset):
+            axs[i].scatter(comparison_df[col], comparison_df[f'{col}_예측'],s=100, alpha=0.7, color='steelblue')
+            axs[i].plot([comparison_df[col].min(), comparison_df[col].max()],
+                       [comparison_df[col].min(), comparison_df[col].max()], 'r--')
+            axs[i].set_title(f"{col}", fontsize=20)
+            axs[i].set_xlabel("실제값", fontsize=20)
+            axs[i].set_ylabel("예측값", fontsize=20)
+            axs[i].tick_params(axis='both', labelsize=18)
+
+            mae = mae_r2_per_crime[col]['mae']
+            r2 = mae_r2_per_crime[col]['r2']
+            axs[i].text(0.5, -0.12, f"MAE: {mae:.2f} | R²: {r2:.2f}",
+                        transform=axs[i].transAxes, ha='center', fontsize=18)
+        # ❗ 남은 subplot 지우기 (예: 마지막에 하나만 있을 때)
+        for j in range(len(subset), len(axs)):
+            fig.delaxes(axs[j])
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        graph_path = os.path.join('webpage', 'static', 'images', 'graphs', f'graph_{idx+1}.png')
+        # 이미지가 없을 때만 저장
+        if not os.path.exists(graph_path):
+            os.makedirs(os.path.dirname(graph_path), exist_ok=True)
+            plt.savefig(graph_path)
+            print(f"📁 저장됨: {graph_path}")
+        else:
+            print(f"✅ 이미 존재: {graph_path}")
+
+        os.makedirs(os.path.dirname(graph_path), exist_ok=True)
+        plt.savefig(graph_path)
+        plt.close()
+
+    print("📁 저장됨:", graph_path)
+
+    return render_template('data/prediction_graph.html', graph_count=len(chunks))
+    
+    # return render_template('data/prediction_graph.html')
+
+
+# ---------------- 페이징 처리 함수 ---------------- #
 def get_display_pages(current_page, total_pages, display_range=5):
     pages = []
 
@@ -56,9 +146,7 @@ def get_display_pages(current_page, total_pages, display_range=5):
 
     return pages
 
-
 # ---------------- 지역처리 함수 ---------------- #
-
 @data_bp.route('/get_crime_data_for_region', methods=['GET'])
 def get_crime_data_for_region_route():
     region = request.args.get('region')
@@ -80,34 +168,69 @@ def get_crime_data_for_region_route():
 
 
 # ---------------- 유흥주점 페이지 함수 ---------------- #
-
 @data_bp.route('/correlation', methods=['GET', 'POST'])
 def correlation_page():
+    active_tab = request.form.get("active_tab", "city")
     selected_type = request.form.get('ent_type', '전체')
     selected_mode = request.form.get('mode', '절대값')
+    density_basis = request.form.get("density_basis", "area")
+    ent_density_basis = request.form.get('ent_density_basis', 'area')
+    crime_density_basis = request.form.get('crime_density_basis', 'area')
 
-    ent_types = ['전체', '룸살롱', '노래클럽', '비어_바_살롱', '카바레', '간이주점', '기타']
+    result = analysis_util.get_density_correlation_data(
+        selected_type, ent_density_basis, crime_density_basis
+    )
+
+
+    ent_types = ['룸살롱', '노래클럽', '비어_바_살롱', '카바레', '간이주점', '기타']
 
     if selected_mode == '비율':
         result = analysis_util.get_correlation_ratio_data(selected_type)
+        if result[0] is None:
+            merged_df = pd.DataFrame()
+            pearson_corr = pearson_p = spearman_corr = spearman_p = 0
+            scatter_data = []
+            regression_line = []
+            max_x = 1
+            max_y = 1
+        else:
+            (merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p,
+            scatter_data, regression_line) = result
+            max_x = max([p['x'] for p in scatter_data], default=1) * 1.2
+            max_y = max([p['y'] for p in scatter_data], default=1) * 1.2
+
+    elif selected_mode == '밀집도':
+        result = analysis_util.get_density_correlation_data(selected_type, ent_density_basis, crime_density_basis)                    
+        if result[0] is None:
+            merged_df = pd.DataFrame()
+            pearson_corr = pearson_p = spearman_corr = spearman_p = 0
+            scatter_data = []
+            regression_line = []
+            max_x = 1
+            max_y = 1
+        else:
+            (merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p,
+            scatter_data, regression_line, max_x, max_y) = result
+
     else:
         result = analysis_util.get_correlation_data(selected_type)
+        if result[0] is None:
+            merged_df = pd.DataFrame()
+            pearson_corr = pearson_p = spearman_corr = spearman_p = 0
+            scatter_data = []
+            regression_line = []
+            max_x = 1
+            max_y = 1
+        else:
+            (merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p,
+            scatter_data, regression_line) = result
+            max_x = max([p['x'] for p in scatter_data], default=1) * 1.2
+            max_y = max([p['y'] for p in scatter_data], default=1) * 1.2
 
-    if result[0] is None:
-        merged_df = pd.DataFrame()
-        pearson_corr = pearson_p = spearman_corr = spearman_p = 0
-        scatter_data = []
-        regression_line = []
-        max_x = 1
-        max_y = 1
-    else:
-        merged_df, pearson_corr, pearson_p, spearman_corr, spearman_p, scatter_data, regression_line = result
-        max_x = max([p['x'] for p in scatter_data], default=1) * 1.2
-        max_y = max([p['y'] for p in scatter_data], default=1) * 1.2
 
     return render_template(
         'data/analysis_1.html',
-        merged_data=merged_df.to_dict(orient='records'),
+        merged_data=merged_df if selected_mode == '밀집도' else merged_df.to_dict(orient='records'),
         pearson_corr=pearson_corr,
         pearson_p=pearson_p,
         spearman_corr=spearman_corr,
@@ -118,7 +241,11 @@ def correlation_page():
         selected_type=selected_type,
         selected_mode=selected_mode,
         max_x=max_x,
-        max_y=max_y
+        max_y=max_y,
+        active_tab=active_tab,
+        density_basis=density_basis,
+        ent_density_basis=ent_density_basis,
+        crime_density_basis=crime_density_basis,
     )
 
 # ---------------- 비율 페이지 함수 ---------------- #
@@ -584,7 +711,10 @@ def crime_insight_page():
     import plotly.graph_objects as go
     import plotly.figure_factory as ff
     from ..db.data_util import get_population_data, get_crsis_code_data
-
+    from ..model.predictor import CrimePredictor   # ← 새로 작성한 모듈
+    import datetime
+    import plotly.io as pio
+    pio.templates.default = "plotly_white"
     # ─────────── 데이터 준비 ───────────
     df = get_population_data()
     detail_df = get_crsis_code_data()
@@ -607,7 +737,8 @@ def crime_insight_page():
     region_df = region_df.drop(columns=["연도"], errors="ignore")
 
     corr = region_df.corr()
-    labels = [col.replace("_rate", " 발생률") for col in corr.columns]
+    labels_raw = list(corr.columns)  # <─ 중요: 순서 보존용
+    labels = [col.replace("_rate", " 발생률") for col in labels_raw]
     corr.columns = labels
     corr.index = labels
 
@@ -621,7 +752,13 @@ def crime_insight_page():
         showscale=True,
         annotation_text=corr.values.round(2)
     )
-    heatmap_html = fig_heatmap.to_html(full_html=False)
+    fig_heatmap.update_layout(
+    autosize=True,
+    margin=dict(l=80, r=20, t=30, b=80),
+    height=700,
+    xaxis=dict(tickangle=45)
+    )
+    heatmap_html = fig_heatmap.to_html(full_html=False, include_plotlyjs=True)
 
     # ─────────── 라벨 매핑 ───────────
     rate_label_map = {col: col.replace("_rate", " 발생률") for col in rate_cols}
@@ -651,7 +788,7 @@ def crime_insight_page():
         yaxis=dict(title=selected_trend1),
         yaxis2=dict(title=selected_trend2, overlaying='y', side='right')
     )
-    compare_trend_html = fig_compare.to_html(full_html=False)
+    compare_trend_html = fig_compare.to_html(full_html=False, include_plotlyjs=False)
 
     # ─────────── 단일 범죄 Plotly ───────────
     selected_trend = request.form.get("trend_crime", trend_labels[0])
@@ -662,17 +799,70 @@ def crime_insight_page():
     fig_trend = px.line(
         trend_df, x="연도", y="발생률", color="지역", markers=True,
         title=f"{selected_trend} - 지역별 연도별 발생률 추이",
-        labels={"발생률": "건/10만명"}, custom_data=["지역"]
+        labels={"발생률": "건/10만명"}, custom_data=["지역"],
+        template="plotly_white"          # ✅ 명시적으로 지정
     )
     fig_trend.update_traces(
         mode="lines+markers",
         hovertemplate="연도: %{x}<br>발생률: %{y:.2f}<br>지역: %{customdata[0]}"
     )
-    trend_html = fig_trend.to_html(full_html=False)
+    trend_html = fig_trend.to_html(full_html=False,  include_plotlyjs=False)
 
     # ─────────── 세부 범죄 설명 처리 ───────────
     raw_detail = detail_df[detail_df["사용자정의분류"] == selected_category]["C1_NM"].values[0]
     selected_details = ", ".join(re.findall(r"'([^']+)'", raw_detail)) if isinstance(raw_detail, str) else ", ".join(raw_detail)
+    
+    # ◆ 1) UI 선택값에 '예측 연도' 폼 항목 받아오기
+
+    # ◆ 1) 예측 연도 + 범죄 항목만 하단에서 다시 받음 ─────
+    pred_year = int(request.form.get("pred_year", 2024))
+    pred_year = max(2016, min(pred_year, 2024))
+
+    pred_target_label = request.form.get("pred_target", trend_labels[0])
+    pred_target_col   = label_to_col[pred_target_label]
+    # ─────────────────────────────────────────────────────
+
+    # ◆ 2) 모델 학습/예측  (cp.train_df_ 저장)──────────────
+    cp = CrimePredictor(top_n=15)
+    cp.fit(df, pred_target_col, selected_region, pred_year)   # 내부에서 self.train_df_ 저장
+    y_pred, err = cp.predict(df, pred_target_col, selected_region, pred_year)
+    train_df   = cp.train_df_
+    train_pred = cp.model.predict(train_df[cp.cols])
+    # ─────────────────────────────────────────────────────
+
+    # ◆ 3) 그래프 생성 (fig_pred 먼저 선언) ────────────────
+    fig_pred = go.Figure()
+
+    # ① 전체 실제
+    hist_df = ( df.groupby("연도")[[pred_target_col]].mean().reset_index()
+                if selected_region == "전국"
+                else df[df["지역"] == selected_region][["연도", pred_target_col]] )
+    fig_pred.add_scatter(x=hist_df["연도"], y=hist_df[pred_target_col],
+                        mode="lines+markers", name="Actual")
+
+    # ② 학습‑기간 Fitted
+    fig_pred.add_scatter(x=train_df["연도"], y=train_pred,
+                        mode="lines+markers", name="Fitted (Train)",
+                        line=dict(dash="dot"))
+
+    # ③ 선택 연도 예측
+    fig_pred.add_scatter(x=[pred_year], y=[y_pred],
+                        mode="markers", marker_symbol="diamond",
+                        marker_size=12, name=f"Predicted {pred_year}")
+
+    # ④ 선택 연도의 실제값(있으면)
+    actual_row = df.query("연도 == @pred_year and 지역 == @selected_region")
+    if not actual_row.empty:
+        actual_val = actual_row[pred_target_col].iloc[0]
+        fig_pred.add_scatter(x=[pred_year], y=[actual_val],
+                            mode="markers", marker_symbol="circle-open",
+                            marker_size=12, name=f"Actual {pred_year}")
+
+    fig_pred.update_layout(
+        title=f"{selected_region} – {pred_target_label} 예측",
+        xaxis_title="연도", yaxis_title="건/10만명"
+    )
+    pred_html = fig_pred.to_html(full_html=False, include_plotlyjs=False)
 
     return render_template(
         "data/crime_insight.html",
@@ -681,13 +871,18 @@ def crime_insight_page():
         selected_details=selected_details,
         region_options=region_options,
         selected_region=selected_region,
-        heatmap_html=heatmap_html,
+        heatmap_html = heatmap_html,
         compare_trend_html=compare_trend_html,
         trend_html=trend_html,
         trend_labels=trend_labels,
         selected_trend=selected_trend,
         selected_trend1=selected_trend1,
-        selected_trend2=selected_trend2
+        selected_trend2=selected_trend2,
+        pred_year       = pred_year,
+        pred_target     = pred_target_label,
+        pred_value      = round(y_pred, 2),
+        pred_error      = err,
+        pred_html       = pred_html
     )
 
 
@@ -739,6 +934,8 @@ def region_corr_page():
         os.makedirs(os.path.dirname(img_fp), exist_ok=True)
         fig.savefig(img_fp, dpi=150)
         plt.close(fig)
+
+
 
     return render_template(
         "data/region_corr.html",
