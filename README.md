@@ -1,5 +1,3 @@
-> 기본적으로 `webpage/run.py`를 실행시키면 됩니다.
-```
 ## 📌 Project Overview & Motivation
 
 본 프로젝트의 기획 의도는 **범죄 간의 상관관계를 분석**하여,
@@ -24,12 +22,42 @@
 > 단, 세부 범죄 레벨에서는 법 개정 등으로 인한 항목 변동이 잦아, **지속적인 데이터 구조 업데이트와 유지보수**가 요구됩니다.
 
 ## 📊 Results & Visualization
-- Main page
+### 🔹 Main Page
+> Flask 기반 웹 대시보드 메인 화면입니다.  
 ![image](https://github.com/user-attachments/assets/42006004-49bf-4f1d-b39c-5be4f688dcf2)
+---
 
+### 🔹 범죄 분류 확인 (KOSIS 기준)
+> KOSIS API의 범죄 코드 체계 기반 사용자 정의 분류 구조입니다.  
+ ![image](https://github.com/user-attachments/assets/f70fc0d9-dd22-4dc5-9595-9175a7fae866)
+---
 
+### 🔹 지역별 범죄 발생률 상관관계 (전국 포함)
+> 각 지역 내 주요 범죄 간 상관관계를 heatmap으로 시각화한 결과입니다.  
+![image](https://github.com/user-attachments/assets/2a179085-76f8-4fed-b70e-8e00c084505e)
+---
+
+### 🔹 상관관계 기반 추이 비교 (2개 범죄)
+> 지역 내 두 범죄 간 상관관계가 **시계열적으로도 유사한지** 확인하기 위한 추이 그래프입니다.  
+![image](https://github.com/user-attachments/assets/4a90ecec-8743-4029-8546-e379e2aac02e)
+---
+
+### 🔹 지역별 시계열 비교 (전국 범위)
+> 특정 범죄의 발생 경향이 **특정 지역에 한정된 것인지** 혹은 전국적으로 유사하게 발생하는지를 파악하기 위한 시계열 비교입니다.
+![image](https://github.com/user-attachments/assets/f43433c8-2aad-4013-aa7b-6bcbf45ee3b7)
+---
+
+### 🔹 예측 모델 (XGBoost Regressor)
+> `objective='count:poisson'` 기반 XGBoost 회귀 모델을 활용하여 **범죄 발생률을 예측**하였습니다.  
+- 예측 시 해당 지역의 **절댓값 기준 상위 5개 범죄 발생률**을 추가 feature로 사용하였습니다.
+![image](https://github.com/user-attachments/assets/a8403228-d4fb-4f48-850e-a020d0629560)
+---
+그 외에도, 유흥업소 - 폭력범죄 상관관계, 경찰관 수, 실업률과 범죄간의 상관관계 분석을 시도하였으나,
+데이터 양의 부족으로 인해 **신뢰성 있는 결과를 도출하지는 못하였습니다.**
 
 ## 📂 Folder Structure
+프로젝트 전체 구조는 다음과 같습니다:
+
 ```
 <Web>
 projectweb/
